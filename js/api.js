@@ -49,8 +49,9 @@
     function load() {
       let db = null;
       try { db = JSON.parse(localStorage.getItem(KEY)); } catch (_) {}
-      if (!db) db = {
-        tpw: '1234', config: DEF, classes: ['체험반'],
+      if (!db || !db.v2) db = {
+        v2: true, code: '1234',
+        classes: [{ name: '체험반', pw: '1234', config: null }],
         students: [{ id: 'S0001', cls: '체험반', no: 1, nick: '체험', pw: '1234', points: 0, last: null }],
         rounds: [], items: []
       };
@@ -58,19 +59,24 @@
     }
     function save(db) { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (_) {} }
     const day = () => new Date().toLocaleDateString('sv-SE');
+    const S = (v) => String(v === undefined || v === null ? '' : v).trim();
     const levelOf = (p, c) => { let n = c.levels[0].name; c.levels.slice().sort((a, b) => a.min - b.min).forEach(l => { if (p >= l.min) n = l.name; }); return n; };
-    function stu(db, nick, pw) {
-      const s = db.students.find(x => x.nick === String(nick).trim());
-      if (!s) throw new Error('등록되지 않은 닉네임이에요. (체험: 닉네임 체험 / 비밀번호 1234)');
-      if (s.pw !== String(pw).trim()) throw new Error('비밀번호가 달라요.');
+    function cls(db, name) { const c = db.classes.find(x => x.name === S(name)); if (!c) throw new Error('학급을 찾지 못했어요.'); return c; }
+    const cfgOf = (c) => c.config || DEF;
+    function stu(db, b) {
+      if (!S(b.cls)) throw new Error('학급을 골라 주세요.');
+      const s = db.students.find(x => x.cls === S(b.cls) && x.nick === S(b.nick));
+      if (!s) throw new Error('이 학급에 없는 닉네임이에요. (체험: 체험반 / 체험 / 1234)');
+      if (s.pw !== S(b.pw)) throw new Error('비밀번호가 달라요.');
       return s;
     }
-    function teacher(db, pw) { if (String(pw) !== db.tpw) throw new Error('교사 비밀번호가 달라요. (체험: 1234)'); }
+    function teacher(db, b) { const c = cls(db, b.cls); if (S(b.tpw) !== c.pw) throw new Error('교사 비밀번호가 달라요. (체험: 1234)'); return c; }
     const H = {
-      login(b, db) { const s = stu(db, b.nick, b.pw); s.last = Date.now(); return { student: { id: s.id, nick: s.nick, cls: s.cls, no: s.no, points: s.points, level: levelOf(s.points, db.config) }, config: db.config }; },
-      history(b, db) { const s = stu(db, b.nick, b.pw); return { items: db.items.filter(r => r[1] === s.id).map(r => [r[0], r[2], r[3], r[4], r[5], r[6]]), rounds: db.rounds.filter(r => r[2] === s.id).map(r => [r[0], r[4], r[5], r[6], r[7], r[8]]) }; },
+      classes(b, db) { return { classes: db.classes.map(c => c.name) }; },
+      login(b, db) { const s = stu(db, b); s.last = Date.now(); const cfg = cfgOf(cls(db, s.cls)); return { student: { id: s.id, nick: s.nick, cls: s.cls, no: s.no, points: s.points, level: levelOf(s.points, cfg) }, config: cfg }; },
+      history(b, db) { const s = stu(db, b); return { items: db.items.filter(r => r[1] === s.id).map(r => [r[0], r[2], r[3], r[4], r[5], r[6]]), rounds: db.rounds.filter(r => r[2] === s.id).map(r => [r[0], r[4], r[5], r[6], r[7], r[8]]) }; },
       submit(b, db) {
-        const s = stu(db, b.nick, b.pw), P = db.config.points[b.act];
+        const s = stu(db, b), cfg = cfgOf(cls(db, s.cls)), P = cfg.points[b.act];
         const items = b.items || [];
         const counted = items.filter(i => i.c !== false);
         const right = counted.filter(i => i.ok).length, wrong = counted.length - right;
@@ -86,25 +92,39 @@
         const now = Date.now();
         db.rounds.push([now, day(), s.id, s.cls, b.level, b.act, right, counted.length, s.points - before]);
         items.forEach(i => db.items.push([now, s.id, b.act, i.sid, i.t, i.ty, i.ok ? 1 : 0]));
-        return { gained: s.points - before, points: s.points, capped, levelBefore: levelOf(before, db.config), level: levelOf(s.points, db.config), roundsToday: done + 1, cap: P.cap };
+        return { gained: s.points - before, points: s.points, capped, levelBefore: levelOf(before, cfg), level: levelOf(s.points, cfg), roundsToday: done + 1, cap: P.cap };
       },
-      tInit(b, db) { teacher(db, b.tpw); return { classes: db.classes, students: db.students.map(s => Object.assign({}, s, { level: levelOf(s.points, db.config) })), config: db.config }; },
-      tAddClass(b, db) { teacher(db, b.tpw); if (db.classes.includes(b.name)) throw new Error('이미 있는 반이에요.'); db.classes.push(b.name); return {}; },
+      tCreateClass(b, db) {
+        if (S(b.code) !== db.code) throw new Error('학교 코드가 달라요. (체험: 1234)');
+        if (!S(b.name)) throw new Error('학급 이름을 적어 주세요.');
+        if (S(b.tpw).length < 4) throw new Error('교사 비밀번호는 4글자 이상으로 정해 주세요.');
+        if (db.classes.some(c => c.name === S(b.name))) throw new Error('이미 있는 학급 이름이에요.');
+        db.classes.push({ name: S(b.name), pw: S(b.tpw), config: null }); return { cls: S(b.name) };
+      },
+      tInit(b, db) { const c = teacher(db, b), cfg = cfgOf(c); return { cls: c.name, students: db.students.filter(s => s.cls === c.name).map(s => Object.assign({}, s, { level: levelOf(s.points, cfg) })), config: cfg }; },
       tAddStudents(b, db) {
-        teacher(db, b.tpw); let n = db.students.length, added = 0; const skipped = [];
-        (b.list || []).forEach(x => { if (db.students.some(s => s.nick === x.nick)) { skipped.push(x.nick); return; } n++; added++; db.students.push({ id: 'S' + String(n + 100).padStart(4, '0'), cls: b.cls, no: Number(x.no) || '', nick: x.nick, pw: String(x.pw), points: 0, last: null }); });
+        const c = teacher(db, b); let added = 0; const skipped = [];
+        (b.list || []).forEach(x => { if (db.students.some(s => s.cls === c.name && s.nick === S(x.nick))) { skipped.push(x.nick); return; } added++; db.students.push({ id: 'S' + String(db.students.length + 101).padStart(5, '0'), cls: c.name, no: Number(x.no) || '', nick: S(x.nick), pw: S(x.pw), points: 0, last: null }); });
         return { added, skipped };
       },
-      tUpdateStudent(b, db) { teacher(db, b.tpw); const s = db.students.find(x => x.id === b.id); ['nick', 'pw', 'no'].forEach(k => { if (b[k] !== undefined) s[k] = b[k]; }); if (b.points !== undefined) s.points = Math.max(0, Number(b.points) || 0); return {}; },
-      tDeleteStudent(b, db) { teacher(db, b.tpw); db.students = db.students.filter(x => x.id !== b.id); return {}; },
+      tUpdateStudent(b, db) {
+        const c = teacher(db, b); const s = db.students.find(x => x.id === b.id && x.cls === c.name); if (!s) throw new Error('이 학급의 학생이 아니에요.');
+        if (b.nick !== undefined) { if (!S(b.nick)) throw new Error('닉네임을 비울 수 없어요.'); if (db.students.some(x => x !== s && x.cls === c.name && x.nick === S(b.nick))) throw new Error('이 학급에 이미 있는 닉네임이에요.'); s.nick = S(b.nick); }
+        if (b.pw !== undefined) { if (!S(b.pw)) throw new Error('비밀번호를 비울 수 없어요.'); s.pw = S(b.pw); }
+        if (b.no !== undefined) s.no = Number(b.no) || '';
+        if (b.points !== undefined) s.points = Math.max(0, Number(b.points) || 0);
+        return {};
+      },
+      tDeleteStudent(b, db) { const c = teacher(db, b); db.students = db.students.filter(x => !(x.id === b.id && x.cls === c.name)); return {}; },
+      tChangeTeacherPw(b, db) { const c = teacher(db, b); if (S(b.newPw).length < 4) throw new Error('새 비밀번호는 4글자 이상으로 정해 주세요.'); c.pw = S(b.newPw); return {}; },
       tDashboard(b, db) {
-        teacher(db, b.tpw); const dash = {};
-        db.students.filter(s => !b.cls || s.cls === b.cls).forEach(s => dash[s.id] = { types: {}, acts: {}, tests: {}, rounds: 0, lastDay: '' });
+        const c = teacher(db, b); const dash = {};
+        db.students.filter(s => s.cls === c.name).forEach(s => dash[s.id] = { types: {}, acts: {}, tests: {}, rounds: 0, lastDay: '' });
         db.rounds.forEach(r => { const d = dash[r[2]]; if (!d) return; d.rounds++; d.acts[r[5]] = (d.acts[r[5]] || 0) + 1; if (r[1] > d.lastDay) d.lastDay = r[1]; if (r[5] === 'test' && r[7]) d.tests[r[4]] = Math.max(d.tests[r[4]] || 0, Math.round(r[6] / r[7] * 100)); });
         db.items.forEach(r => { const d = dash[r[1]]; if (!d) return; const k = r[5] || '기타'; d.types[k] = d.types[k] || [0, 0]; d.types[k][r[6] ? 0 : 1]++; });
         return { dash };
       },
-      tSaveConfig(b, db) { teacher(db, b.tpw); db.config = b.config; return { config: db.config }; }
+      tSaveConfig(b, db) { const c = teacher(db, b); c.config = b.config; return { config: c.config }; }
     };
     return {
       handle(body) {

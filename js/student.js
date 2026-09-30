@@ -65,7 +65,7 @@
     const q = pending(); if (!q.length || !state.creds) return;
     const rest = [];
     for (const r of q) {
-      if (r.nick !== state.creds.nick) { rest.push(r); continue; }
+      if (r.nick !== state.creds.nick || (r.cls || '') !== (state.creds.cls || '')) { rest.push(r); continue; }
       try { const res = await API.call('submit', Object.assign({}, state.creds, r.body)); state.student.points = res.points; state.student.level = res.level; }
       catch (e) { rest.push(r); if (e.network) break; }
     }
@@ -87,7 +87,7 @@
     } catch (e) {
       if (e.network) {
         state.hist.rounds.push([now, level, act, counted.filter(i => i.ok).length, counted.length, 0]);
-        const q = pending(); q.push({ nick: state.creds.nick, body }); setPending(q);
+        const q = pending(); q.push({ cls: state.creds.cls, nick: state.creds.nick, body }); setPending(q);
         return { pending: true, gained: 0 };
       }
       toast(e.message, 3500);
@@ -114,35 +114,46 @@
   }
 
   /* ───────── 로그인 ───────── */
+  let lastCls = '';
+  try { lastCls = localStorage.getItem('dict_cls') || ''; } catch (_) {}
   function showLogin(msg) {
     const noServer = !API.serverUrl();
     show(`<div class="login card">
-      <div class="logo-tiles" style="grid-template-columns:repeat(4,44px)"><i style="background:var(--blue)">받</i><i style="background:var(--green)">아</i><i style="background:var(--red)">쓰</i><i style="background:var(--blue)">기</i></div>
+      <div class="logo-tiles" style="grid-template-columns:repeat(4,40px)"><i style="background:var(--blue)">받</i><i style="background:var(--green)">아</i><i style="background:var(--red)">쓰</i><i style="background:var(--blue)">기</i></div>
       <h1>차근차근 받아쓰기</h1>
-      <p class="muted" style="color:var(--muted);margin:0">4학년 · 한 급씩 차근차근</p>
+      <p class="muted" style="margin:0">4학년 · 한 급씩 차근차근</p>
+      <label class="field"><span>학급</span><select id="cls" class="textin"><option value="">불러오는 중…</option></select></label>
       <label class="field"><span>닉네임</span><input id="nick" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></label>
       <label class="field"><span>비밀번호</span><input id="pw" type="password" autocomplete="off"></label>
       <button class="btn" id="go" style="width:100%">들어가기</button>
-      ${noServer ? `<div class="msg warn">아직 서버 주소가 연결되지 않았어요. 체험 모드로 둘러볼 수 있어요.</div>
+      ${noServer && !API.isDemo() ? `<div class="msg warn">아직 서버 주소가 연결되지 않았어요. 체험 모드로 둘러볼 수 있어요.</div>
         <button class="btn ghost" id="demo" style="width:100%;margin-top:10px">체험 모드로 둘러보기</button>` : ''}
       <div id="lmsg">${msg ? `<div class="msg bad">${esc(msg)}</div>` : ''}</div>
     </div>`);
+    const fill = (list) => {
+      $('#cls').innerHTML = list.length
+        ? `<option value="">학급을 골라요</option>` + list.map(c => `<option ${c === lastCls ? 'selected' : ''}>${esc(c)}</option>`).join('')
+        : '<option value="">아직 학급이 없어요</option>';
+    };
+    if (noServer && !API.isDemo()) fill([]);
+    else API.call('classes').then(r => fill(r.classes || [])).catch(e => { fill([]); $('#lmsg').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; });
     const go = async () => {
-      const nick = $('#nick').value.trim(), pw = $('#pw').value.trim();
+      const cls = $('#cls').value, nick = $('#nick').value.trim(), pw = $('#pw').value.trim();
+      if (!cls) { $('#lmsg').innerHTML = '<div class="msg bad">학급을 먼저 골라 주세요.</div>'; return; }
       if (!nick || !pw) { $('#lmsg').innerHTML = '<div class="msg bad">닉네임과 비밀번호를 모두 써 주세요.</div>'; return; }
       $('#go').disabled = true; $('#lmsg').innerHTML = '<div class="spinner"></div>';
-      try { await doLogin(nick, pw); }
+      try { await doLogin(cls, nick, pw); }
       catch (e) { $('#lmsg').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; $('#go').disabled = false; }
     };
     $('#go').onclick = go;
     enterKey($('#pw'), go);
-    if ($('#demo')) $('#demo').onclick = async () => { API.setDemo(true); await doLogin('체험', '1234'); toast('체험 모드예요. 기록은 이 기기에만 남아요.', 3000); };
+    if ($('#demo')) $('#demo').onclick = async () => { API.setDemo(true); await doLogin('체험반', '체험', '1234'); toast('체험 모드예요. 기록은 이 기기에만 남아요.', 3000); };
   }
-  async function doLogin(nick, pw) {
-    const r = await API.call('login', { nick, pw });
-    state.student = r.student; state.config = r.config; state.creds = { nick, pw };
-    try { localStorage.setItem('dict_login', JSON.stringify({ nick, pw, demo: API.isDemo() })); } catch (_) {}
-    try { const h = await API.call('history', { nick, pw }); state.hist = { items: h.items || [], rounds: h.rounds || [] }; } catch (_) {}
+  async function doLogin(cls, nick, pw) {
+    const r = await API.call('login', { cls, nick, pw });
+    state.student = r.student; state.config = r.config; state.creds = { cls, nick, pw };
+    try { localStorage.setItem('dict_login', JSON.stringify({ cls, nick, pw, demo: API.isDemo() })); localStorage.setItem('dict_cls', cls); lastCls = cls; } catch (_) {}
+    try { const h = await API.call('history', { cls, nick, pw }); state.hist = { items: h.items || [], rounds: h.rounds || [] }; } catch (_) {}
     const lastSem = (state.hist.rounds.slice(-1)[0] || [])[1];
     if (lastSem && LEVEL[lastSem]) state.sem = LEVEL[lastSem].sem;
     renderTop(); flushPending(); showHome();
@@ -194,7 +205,7 @@
       <div class="card hello">
         ${rankBadge(li.cur.name)}
         <div style="flex:1;min-width:220px">
-          <div style="font-size:1.3rem;font-weight:700">${esc(s.nick)}, 반가워요!</div>
+          <div class="big" style="font-size:1.25rem;font-weight:800">${esc(s.nick)}, 반가워요!</div>
           <div style="color:var(--muted)">지금 <b style="color:var(--ink)">${esc(li.cur.name)}</b> · ${s.points}점
             ${li.next ? ` · <b>${esc(li.next.name)}</b>까지 ${li.next.min - s.points}점` : ' · 최고 등급이에요!'}</div>
           <div class="progress"><i style="width:${li.pct}%"></i></div>
@@ -216,7 +227,7 @@
           return `<button class="lvcard" data-lv="${L.key}">
             ${b !== null ? `<span class="best">시험 <b>${b}</b>점</span>` : ''}
             <span class="nm">${esc(L.name)}</span>
-            <span style="color:var(--muted);font-size:.9rem">${esc(L.sentences[0].text)} …</span>
+            <span class="pv" style="color:var(--muted);font-size:.85rem">${esc(L.sentences[0].text)} …</span>
             <span class="stamps">${ACTS.map(a => `<i class="stamp ${d.has(a.key) ? 'on' : ''}" title="${esc(a.name)}"></i>`).join('')}</span>
           </button>`;
         }).join('')}
@@ -670,7 +681,7 @@
     const list = LEVEL[levelKey].sentences, items = [];
     const qs = [];
     list.forEach(s => {
-      const c = s.p.filter(p => p.s && p.s !== p.t && s.text.indexOf(p.t) >= 0 && !p.t.includes(' '));
+      const c = s.p.filter(p => p.s && p.s !== p.t && p.ty !== '띄어쓰기' && p.ty !== '문장부호' && s.text.indexOf(p.t) >= 0 && !p.t.includes(' '));
       if (c.length) qs.push({ s, p: shuffle(c)[0] });
     });
     let i = 0, right = 0;
@@ -871,10 +882,10 @@
     $('#brand').onclick = () => { if (state.student) showHome(); };
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem('dict_login') || 'null'); } catch (_) {}
-    if (saved && saved.nick) {
+    if (saved && saved.nick && saved.cls) {
       if (saved.demo) API.setDemo(true);
       show('<div class="spinner"></div>');
-      try { await doLogin(saved.nick, saved.pw); return; }
+      try { await doLogin(saved.cls, saved.nick, saved.pw); return; }
       catch (e) { if (!e.network) { try { localStorage.removeItem('dict_login'); } catch (_) {} } showLogin(e.message); return; }
     }
     showLogin();
