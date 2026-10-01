@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2a2c30">
+<title>받아쓰기 시작하기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Nunito:wght@600;700;800&family=Noto+Sans+KR:wght@400;700;800&display=swap" rel="stylesheet">
+<script>document.write('<link rel="stylesheet" href="css/style.css?v=' + Date.now() + '">');</script>
+<style>
+  .stp{display:flex;gap:14px;align-items:flex-start}
+  .stp .n{flex:none;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-family:"Jua",sans-serif;font-size:1.3rem;color:#fff}
+  .stp h2{margin:4px 0 6px;font-size:1.25rem}
+  .stp ol{margin:6px 0;padding-left:1.2em} .stp li{margin:5px 0}
+  .k{background:var(--cell);border-radius:6px;padding:1px 7px;font-weight:700;white-space:nowrap}
+  .note{background:var(--warn-soft);color:#f6d58f;border-radius:10px;padding:10px 14px;margin-top:10px;font-size:.93rem}
+  .bigbtn{display:inline-block;text-decoration:none;margin-top:6px}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="brand"><span class="seal">받</span><span class="txt">차근차근 받아쓰기 · 시작하기</span></div></header>
+<div class="waves" aria-hidden="true"><svg class="w1" viewBox="0 0 2400 120" preserveAspectRatio="none"><path fill="#3d7a6b" d="M0 52 Q 300 22 600 52 T 1200 52 Q 1500 22 1800 52 T 2400 52 V120 H0 Z"/></svg><svg class="w2" viewBox="0 0 2400 120" preserveAspectRatio="none"><path fill="#ec5a5a" d="M0 72 Q 300 46 600 72 T 1200 72 Q 1500 46 1800 72 T 2400 72 V120 H0 Z"/></svg><svg class="w3" viewBox="0 0 2400 120" preserveAspectRatio="none"><path fill="#4e7fd1" d="M0 92 Q 300 74 600 92 T 1200 92 Q 1500 74 1800 92 T 2400 92 V120 H0 Z"/></svg></div>
+<main>
+  <div class="stage">
+    <div class="logo-tiles" style="grid-template-columns:repeat(4,40px);margin-top:10px"><i style="background:var(--blue)">받</i><i style="background:var(--green)">아</i><i style="background:var(--red)">쓰</i><i style="background:var(--blue)">기</i></div>
+    <h1 style="text-align:center;margin:0">우리 반 받아쓰기 시작하기</h1>
+    <p class="muted" style="text-align:center;margin:4px 0 18px">약 5분 · 컴퓨터에서 · <b style="color:var(--ink)">개인 Gmail 계정</b>으로 해 주세요 (학교 계정은 막혀 있을 수 있어요)</p>
+
+    <div class="card stp">
+      <span class="n" style="background:var(--blue)">1</span>
+      <div style="flex:1">
+        <h2>내 구글 드라이브에 받아쓰기 시트 복사하기</h2>
+        <p style="margin:0">버튼을 누르고 <span class="k">사본 만들기</span>를 누르면 끝이에요. 학생 기록은 이 시트에 저장되고, 선생님만 볼 수 있어요.</p>
+        <a class="btn bigbtn" id="copyBtn" href="#" target="_blank" rel="noopener">📄 사본 만들기</a>
+        <div id="noTpl" class="note hidden">아직 원본 시트 주소가 등록되지 않았어요. 앱을 나눠 준 선생님께 알려 주세요.</div>
+      </div>
+    </div>
+
+    <div class="card stp" style="margin-top:12px">
+      <span class="n" style="background:var(--green)">2</span>
+      <div style="flex:1">
+        <h2>배포 한 번 하기 (처음 한 번만)</h2>
+        <ol>
+          <li>복사된 시트 위쪽 메뉴 <span class="k">받아쓰기</span> → <span class="k">① 우리 반 시작하기</span>를 눌러요. (메뉴가 안 보이면 새로고침)</li>
+          <li>‘승인 필요’ 창이 뜨면 <span class="k">계속</span> → 내 계정 선택 → <span class="k">허용</span></li>
+          <li>나오는 안내대로: <span class="k">확장 프로그램</span> → <span class="k">Apps Script</span> → <span class="k">배포</span> → <span class="k">새 배포</span> → 톱니바퀴 <span class="k">웹 앱</span></li>
+          <li>실행: <b>나</b> / 액세스 권한: <b>모든 사용자</b> → <span class="k">배포</span> → <span class="k">액세스 승인</span></li>
+          <li><b>웹 앱 URL</b> 옆 <span class="k">복사</span> → 시트 창으로 돌아와 칸에 붙여 넣고 <span class="k">저장하고 다음으로</span></li>
+        </ol>
+        <div class="note">⚠️ “Google에서 확인하지 않은 앱” 화면이 나와요. 선생님 본인이 복사한 시트라서 뜨는 안내예요. <span class="k">고급</span> → <span class="k">(안전하지 않음)으로 이동</span> → <span class="k">허용</span>을 누르면 돼요. 이 시트는 선생님 시트에 받아쓰기 기록을 쓰는 일만 해요.</div>
+      </div>
+    </div>
+
+    <div class="card stp" style="margin-top:12px">
+      <span class="n" style="background:var(--red)">3</span>
+      <div style="flex:1">
+        <h2>학급 만들고 QR 받기</h2>
+        <ol>
+          <li>학급 이름과 교사 비밀번호를 넣으면 <b>학생 접속 주소와 QR 코드</b>가 바로 나와요.</li>
+          <li><span class="k">교사 화면 열기</span> → <span class="k">학생 관리</span>에서 <code>번호, 닉네임, 비밀번호</code>를 붙여 넣어 학생을 등록해요.</li>
+          <li>QR 코드를 칠판에 띄우면, 학생들은 태블릿으로 찍고 학급·닉네임·비밀번호로 들어와요. 한 번 들어오면 태블릿이 기억해요.</li>
+        </ol>
+        <p class="muted" style="margin:6px 0 0">QR은 교사 화면 <span class="k">설정·QR</span> 탭이나 시트 메뉴 <span class="k">받아쓰기 ▸ ① 우리 반 시작하기</span>에서 언제든 다시 볼 수 있어요.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h2 style="margin:0 0 6px;font-size:1.15rem">학생 태블릿 준비</h2>
+      <p style="margin:0">삼성 키보드는 <span class="k">설정</span> → <span class="k">일반</span> → <span class="k">삼성 키보드 설정</span>에서 <b>예측 텍스트</b>와 <b>자동 맞춤법 검사</b>를 꺼 주세요. 켜져 있으면 틀리게 써도 키보드가 고쳐 버려요.</p>
+    </div>
+    <div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a> · <a href="./?demo">체험 모드로 둘러보기</a></div>
+  </div>
+</main>
+<script>document.write('<script src="config.js?v=' + Date.now() + '"><\/script>');</script>
+<script>
+  (function () {
+    var url = '';
+    try { url = (typeof TEMPLATE_URL === 'string') ? TEMPLATE_URL.trim() : ''; } catch (e) {}
+    var b = document.getElementById('copyBtn');
+    if (/^https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+\/copy/.test(url)) b.href = url;
+    else { b.classList.add('hidden'); document.getElementById('noTpl').classList.remove('hidden'); }
+  })();
+</script>
+</body>
+</html>
