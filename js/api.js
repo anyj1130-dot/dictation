@@ -3,10 +3,33 @@
   'use strict';
 
   const okUrl = (u) => /^https:\/\/script\.google\.com\/.+\/exec$/.test(String(u || '').trim());
+  const SKEY = 'dict_server';
 
+  // 선생님 서버 주소: 링크 뒤 ?s=배포ID(또는 전체 주소) → 이 기기에 기억 → (없으면) config.js 기본 주소
+  function normServer(v) {
+    v = String(v || '').trim();
+    if (!v) return '';
+    if (/^AKfy[\w-]{20,}$/.test(v)) return 'https://script.google.com/macros/s/' + v + '/exec';
+    return okUrl(v) ? v : '';
+  }
+  (function readLinkServer() {
+    try {
+      const q = new URLSearchParams(location.search).get('s');
+      const n = normServer(q);
+      if (n) localStorage.setItem(SKEY, n);
+    } catch (_) {}
+  })();
   function serverUrl() {
+    try { const s = localStorage.getItem(SKEY); if (okUrl(s)) return s; } catch (_) {}
     try { if (typeof API_URL === 'string' && okUrl(API_URL)) return API_URL.trim(); } catch (_) {}
     return '';
+  }
+  function serverId() { const m = serverUrl().match(/\/s\/([^/]+)\/exec/); return m ? m[1] : ''; }
+  // 같은 사이트의 다른 페이지 주소 (서버 ID를 붙여서)
+  function linkFor(page) {
+    const base = location.origin + location.pathname.replace(/[^/]*$/, '');
+    const id = serverId();
+    return base + (page || '') + (id ? '?s=' + id : '');
   }
   function isDemo() {
     try { return /[?&]demo\b/.test(location.search) || sessionStorage.getItem('demo') === '1'; } catch (_) { return false; }
@@ -16,7 +39,7 @@
   async function call(action, data) {
     const body = Object.assign({ action }, data || {});
     if (isDemo() || !serverUrl()) {
-      if (!isDemo()) throw new Error('서버 주소(config.js)가 아직 없어요. 선생님께 알려 주세요.');
+      if (!isDemo()) throw new Error('선생님께 받은 링크나 QR 코드로 들어와 주세요.');
       return Mock.handle(body);
     }
     let res;
@@ -206,6 +229,6 @@
     return { play, stop, preload, hasFile };
   })();
 
-  G.API = { call, serverUrl, isDemo, setDemo, resetDemo: () => Mock.reset() };
+  G.API = { call, serverUrl, serverId, linkFor, isDemo, setDemo, resetDemo: () => Mock.reset() };
   G.Sound = Audio2;
 })(window);

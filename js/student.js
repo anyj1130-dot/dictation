@@ -65,7 +65,7 @@
     const q = pending(); if (!q.length || !state.creds) return;
     const rest = [];
     for (const r of q) {
-      if (r.nick !== state.creds.nick || (r.cls || '') !== (state.creds.cls || '')) { rest.push(r); continue; }
+      if (r.nick !== state.creds.nick || (r.cls || '') !== (state.creds.cls || '') || (r.server || '') !== API.serverUrl()) { rest.push(r); continue; }
       try { const res = await API.call('submit', Object.assign({}, state.creds, r.body)); state.student.points = res.points; state.student.level = res.level; }
       catch (e) { rest.push(r); if (e.network) break; }
     }
@@ -87,7 +87,7 @@
     } catch (e) {
       if (e.network) {
         state.hist.rounds.push([now, level, act, counted.filter(i => i.ok).length, counted.length, 0]);
-        const q = pending(); q.push({ cls: state.creds.cls, nick: state.creds.nick, body }); setPending(q);
+        const q = pending(); q.push({ server: API.serverUrl(), cls: state.creds.cls, nick: state.creds.nick, body }); setPending(q);
         return { pending: true, gained: 0 };
       }
       toast(e.message, 3500);
@@ -126,10 +126,10 @@
       <label class="field"><span>닉네임</span><input id="nick" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></label>
       <label class="field"><span>비밀번호</span><input id="pw" type="password" autocomplete="off"></label>
       <button class="btn" id="go" style="width:100%">들어가기</button>
-      ${noServer && !API.isDemo() ? `<div class="msg warn">아직 서버 주소가 연결되지 않았어요. 체험 모드로 둘러볼 수 있어요.</div>
+      ${noServer && !API.isDemo() ? `<div class="msg warn">선생님께 받은 <b>링크나 QR 코드</b>로 들어와 주세요. 그냥 둘러보려면 체험 모드를 눌러요.</div>
         <button class="btn ghost" id="demo" style="width:100%;margin-top:10px">체험 모드로 둘러보기</button>` : ''}
       <div id="lmsg">${msg ? `<div class="msg bad">${esc(msg)}</div>` : ''}</div>
-      <a class="teacherlink" href="teacher.html${API.isDemo() ? '?demo' : ''}">선생님이신가요? <b>교사 화면으로 →</b></a>
+      <a class="teacherlink" href="${API.isDemo() ? 'teacher.html?demo' : API.linkFor('teacher.html')}">선생님이신가요? <b>교사 화면으로 →</b></a>
     </div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a></div>`);
     const fill = (list) => {
       $('#cls').innerHTML = list.length
@@ -153,7 +153,7 @@
   async function doLogin(cls, nick, pw) {
     const r = await API.call('login', { cls, nick, pw });
     state.student = r.student; state.config = r.config; state.creds = { cls, nick, pw };
-    try { localStorage.setItem('dict_login', JSON.stringify({ cls, nick, pw, demo: API.isDemo() })); localStorage.setItem('dict_cls', cls); lastCls = cls; } catch (_) {}
+    try { localStorage.setItem('dict_login', JSON.stringify({ cls, nick, pw, demo: API.isDemo(), server: API.isDemo() ? '' : API.serverUrl() })); localStorage.setItem('dict_cls', cls); lastCls = cls; } catch (_) {}
     try { const h = await API.call('history', { cls, nick, pw }); state.hist = { items: h.items || [], rounds: h.rounds || [] }; } catch (_) {}
     const lastSem = (state.hist.rounds.slice(-1)[0] || [])[1];
     if (lastSem && LEVEL[lastSem]) state.sem = LEVEL[lastSem].sem;
@@ -232,7 +232,7 @@
             <span class="stamps">${ACTS.map(a => `<i class="stamp ${d.has(a.key) ? 'on' : ''}" title="${esc(a.name)}"></i>`).join('')}</span>
           </button>`;
         }).join('')}
-      </div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a></div>`);
+      </div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a> · <a href="${API.isDemo() ? 'teacher.html?demo' : API.linkFor('teacher.html')}">교사 화면</a></div>`);
     $$('[data-sem]').forEach(b => b.onclick = () => { state.sem = b.dataset.sem; showHome(); });
     $$('[data-lv]').forEach(b => b.onclick = () => showLevel(b.dataset.lv));
     $('#goNote').onclick = showNote;
@@ -884,7 +884,7 @@
     $('#brand').onclick = () => { if (state.student) showHome(); };
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem('dict_login') || 'null'); } catch (_) {}
-    if (saved && saved.nick && saved.cls) {
+    if (saved && saved.nick && saved.cls && (saved.demo || saved.server === API.serverUrl())) {
       if (saved.demo) API.setDemo(true);
       show('<div class="spinner"></div>');
       try { await doLogin(saved.cls, saved.nick, saved.pw); return; }

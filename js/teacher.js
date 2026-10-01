@@ -10,6 +10,14 @@
   const st = { tpw: '', students: [], config: null, cls: '', tab: 'students', sem: '4-1' };
 
   function toast(msg, ms) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), ms || 2400); }
+  // QR 코드 (cdnjs의 qrcodejs를 필요할 때만 불러와요)
+  let qrLib = null;
+  function drawQr(el, text, size) {
+    const go = () => { el.innerHTML = ''; new QRCode(el, { text, width: size, height: size, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }); };
+    if (window.QRCode) return go();
+    if (!qrLib) qrLib = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+    qrLib.then(go, () => { el.innerHTML = '<div class="muted" style="font-size:.85rem">QR을 불러오지 못했어요. 주소를 복사해서 쓰세요.</div>'; });
+  }
   const call = (a, d) => API.call(a, Object.assign({ cls: st.cls, tpw: st.tpw }, d || {}));
   const fmtDate = (ms) => ms ? new Date(ms).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) : '—';
   const levelShort = (key) => { const L = D.levels.find(x => x.key === key); return L ? L.name.replace('기초 다지기 ', '기초') : key; };
@@ -23,7 +31,7 @@
       <label class="field"><span>교사 비밀번호</span><input id="tpw" type="password" autocomplete="off"></label>
       <button class="btn" id="go" style="width:100%">들어가기</button>
       <button class="btn ghost" id="newBtn" style="width:100%;margin-top:10px">새 학급 만들기</button>
-      ${noServer && !API.isDemo() ? `<div class="msg warn">서버 주소가 없어요. 체험 모드로 둘러볼 수 있어요. (체험반 / 비밀번호 1234 · 학교 코드 1234)</div><button class="btn ghost" id="demo" style="width:100%;margin-top:10px">체험 모드</button>` : ''}
+      ${noServer && !API.isDemo() ? `<div class="msg warn">아직 내 서버(구글 시트)가 연결되지 않았어요. <a href="start.html" style="color:inherit;font-weight:800">처음 시작하는 방법 보기 →</a><br><small>둘러보기만 하려면 체험 모드 (체험반 / 비밀번호 1234 · 학교 코드 1234)</small></div><button class="btn ghost" id="demo" style="width:100%;margin-top:10px">체험 모드</button>` : ''}
       <div id="lmsg">${msg ? `<div class="msg bad">${esc(msg)}</div>` : ''}</div></div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a></div>`;
     const fill = (list) => {
       $('#cls').innerHTML = list.length ? '<option value="">학급을 골라요</option>' + list.map(c => `<option ${c === st.cls ? 'selected' : ''}>${esc(c)}</option>`).join('') : '<option value="">아직 학급이 없어요 · 새 학급을 만들어 주세요</option>';
@@ -65,7 +73,7 @@
       } catch (e) { $('#lmsg').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; }
     };
   }
-  function remember() { try { sessionStorage.setItem('dict_t', JSON.stringify({ cls: st.cls, tpw: st.tpw })); } catch (_) {} }
+  function remember() { try { sessionStorage.setItem('dict_t', JSON.stringify({ cls: st.cls, tpw: st.tpw, server: API.serverUrl() })); } catch (_) {} }
   async function load() {
     const r = await call('tInit');
     st.students = r.students; st.config = r.config;
@@ -73,8 +81,8 @@
 
   /* 틀 */
   function render() {
-    const tabs = [['students', '학생 관리'], ['progress', '진행 현황'], ['weak', '약점 분석'], ['points', '설정'], ['audio', '음성 확인']];
-    $('#me').innerHTML = `${API.isDemo() ? '<span class="pending">체험 모드</span>' : ''}<span class="rank"><span class="dot">반</span>${esc(st.cls)}</span><a class="linkbtn hide-sm" href="./">학생 화면</a><button class="linkbtn" id="out">나가기</button>`;
+    const tabs = [['students', '학생 관리'], ['progress', '진행 현황'], ['weak', '약점 분석'], ['points', '설정·QR'], ['audio', '음성 확인']];
+    $('#me').innerHTML = `${API.isDemo() ? '<span class="pending">체험 모드</span>' : ''}<span class="rank"><span class="dot">반</span>${esc(st.cls)}</span><a class="linkbtn hide-sm" href="${API.isDemo() ? './?demo' : API.linkFor('')}">학생 화면</a><button class="linkbtn" id="out">나가기</button>`;
     $('#out').onclick = () => { try { sessionStorage.removeItem('dict_t'); } catch (_) {} API.setDemo(false); location.reload(); };
     $('#main').innerHTML = `
       <div class="tabs" style="margin:0">${tabs.map(([k, n]) => `<button data-tab="${k}" class="${st.tab === k ? 'on' : ''}">${n}</button>`).join('')}</div>
@@ -195,7 +203,12 @@
   function tabPoints() {
     const c = JSON.parse(JSON.stringify(st.config));
     const keys = Object.keys(c.points);
-    $('#tabBody').innerHTML = `<div class="grid g2">
+    $('#tabBody').innerHTML = `      <div class="card" style="margin-bottom:14px"><h3 style="margin:0 0 4px">학생 접속 주소 · QR 코드</h3>
+        <p class="muted" style="margin:0 0 10px;font-size:.92rem">학생들은 이 주소(또는 QR)로 한 번만 들어오면 다음부터 태블릿이 기억해요.</p>
+        <div class="qrbox"><div id="qr" class="qr"></div>
+          <div style="flex:1;min-width:220px"><input class="textin" id="stuLink" readonly style="font-size:.9rem">
+            <div class="row" style="margin-top:8px"><button class="btn small" id="copyLink">주소 복사</button><button class="btn ghost small" id="bigQr">QR 크게 보기</button></div></div></div></div>
+<div class="grid g2">
       <div class="card"><h3 style="margin:0 0 10px">활동별 점수</h3>
         <div class="tablewrap"><table class="t"><tr><th>활동</th><th class="num">맞히면</th><th class="num">틀리면</th><th class="num">끝내면</th><th class="num">하루 횟수</th></tr>
         ${keys.map(k => `<tr data-k="${k}"><td>${esc(c.points[k].name || k)}${k === 'test' ? '<br><small style="color:var(--muted)">100점 보너스</small>' : k === 'review' ? '<br><small style="color:var(--muted)">노트에서 빠지면</small>' : ''}</td>
@@ -214,6 +227,16 @@
       </div></div>
       <div class="card" style="margin-top:14px"><h3 style="margin:0 0 8px">교사 비밀번호 바꾸기</h3>
         <div class="row"><input class="textin" id="newPw" type="password" placeholder="새 비밀번호 (4글자 이상)" style="flex:1;min-width:180px;font-size:1rem"><button class="btn small" id="chPw">바꾸기</button></div></div>`;
+    const stuLink = API.isDemo() ? location.origin + location.pathname.replace(/[^/]*$/, '') + '?demo' : API.linkFor('');
+    $('#stuLink').value = stuLink;
+    drawQr($('#qr'), stuLink, 150);
+    $('#copyLink').onclick = async () => { try { await navigator.clipboard.writeText(stuLink); toast('주소를 복사했어요.'); } catch (_) { $('#stuLink').select(); document.execCommand('copy'); toast('주소를 복사했어요.'); } };
+    $('#bigQr').onclick = () => {
+      const m = document.createElement('div'); m.className = 'modal';
+      m.innerHTML = `<div class="box" style="max-width:560px"><h2 style="margin:0 0 4px">${esc(st.cls)} 받아쓰기</h2><p class="muted" style="margin:0 0 12px">카메라로 찍어서 들어와요</p><div id="qrBig" class="qr" style="margin:0 auto"></div><p style="word-break:break-all;font-size:.85rem;color:var(--muted)">${esc(stuLink)}</p><button class="btn" style="width:100%">닫기</button></div>`;
+      document.body.appendChild(m); drawQr($('#qrBig'), stuLink, Math.min(420, window.innerWidth - 80));
+      m.querySelector('button').onclick = () => m.remove();
+    };
     $('#chPw').onclick = async () => {
       const newPw = $('#newPw').value.trim();
       try { await call('tChangeTeacherPw', { newPw }); st.tpw = newPw; remember(); $('#newPw').value = ''; toast('교사 비밀번호를 바꿨어요.'); } catch (e) { toast(e.message); }
@@ -255,7 +278,7 @@
   (async function start() {
     let saved = null;
     try { saved = JSON.parse(sessionStorage.getItem('dict_t') || 'null'); } catch (_) {}
-    if (saved && saved.cls) {
+    if (saved && saved.cls && (API.isDemo() || saved.server === API.serverUrl())) {
       st.cls = saved.cls; st.tpw = saved.tpw; $('#main').innerHTML = '<div class="spinner"></div>';
       try { await load(); render(); return; } catch (e) { showLogin(e.message); return; }
     }
