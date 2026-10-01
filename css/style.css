@@ -366,3 +366,5 @@ textarea.textin{resize:vertical;font-family:inherit}
   .tabs::-webkit-scrollbar{display:none}
   .tabs button{flex:none}
 }
+.teacherlink{display:block;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);text-decoration:none;font-size:.92rem}
+.teacherlink b{color:var(--ink);font-weight:800}
