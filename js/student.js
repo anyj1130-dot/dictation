@@ -129,6 +129,7 @@
       ${noServer && !API.isDemo() ? `<div class="msg warn">아직 서버 주소가 연결되지 않았어요. 체험 모드로 둘러볼 수 있어요.</div>
         <button class="btn ghost" id="demo" style="width:100%;margin-top:10px">체험 모드로 둘러보기</button>` : ''}
       <div id="lmsg">${msg ? `<div class="msg bad">${esc(msg)}</div>` : ''}</div>
+      <a class="teacherlink" href="teacher.html${API.isDemo() ? '?demo' : ''}">선생님이신가요? <b>교사 화면으로 →</b></a>
     </div>`);
     const fill = (list) => {
       $('#cls').innerHTML = list.length
