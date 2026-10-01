@@ -4,13 +4,16 @@
   const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
   const JUNG = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
   const JONG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-  const PUNCT = /[.,?!]/;
+  const PUNCT = /[.,?!'"‘’“”]/;
 
   function dec(ch) {
     const c = ch.charCodeAt(0) - 0xAC00;
     if (c < 0 || c > 11171) return null;
     return [CHO[Math.floor(c / 588)], JUNG[Math.floor((c % 588) / 28)], JONG[c % 28]];
   }
+
+  // 따옴표는 곧은 따옴표로 맞춰서 비교 (태블릿 키보드는 ' " 로 입력돼요)
+  const nq = (s) => String(s).replace(/[‘’`´]/g, "'").replace(/[“”]/g, '"');
 
   // 입력 정리: 앞뒤 공백 제거, 연속 공백 하나로, 전각/특수 따옴표 정리
   function clean(s) {
@@ -119,7 +122,9 @@
    * return { ok, chars:[{ch, bad}], gapErr:[{i, kind}], points:[{p, ok, note}], notes:[], optNotes:[] }
    */
   function grade(sent, answer) {
-    const L = layout(sent);
+    answer = nq(answer || '');
+    const L0 = layout(sent);
+    const L = { chars: L0.chars.map(nq), gaps: L0.gaps };
     const A = parseAnswer(answer);
     const want = L.chars.join(''), got = A.chars.join('');
     const res = { ok: false, sameChars: want === got, answer: clean(answer), gapErr: [], points: [], notes: [], optNotes: [] };
@@ -146,19 +151,19 @@
 
     // 항목별 판정
     (sent.p || []).forEach(p => {
-      const tNo = p.t.replace(/ /g, '');
+      const tNo = nq(p.t).replace(/ /g, '');
       let ok = null, note = '';
       if (p.ty === '문장부호') {
         if (ansNo.includes(tNo)) ok = true;
         else if (ansNo.includes(tNo.replace(/[.,?!]+$/, ''))) ok = false;
       } else if (p.ty === '띄어쓰기') {
-        const vs = variants(sent, p.t);
+        const vs = variants(sent, p.t).map(nq);
         if (vs.some(v => ansClean.includes(v))) ok = true;
         else if (ansNo.includes(tNo)) ok = false;
       } else {
         ok = ansNo.includes(tNo);
         if (!ok) {
-          const hit = (p.w || []).find(w => w.replace(/ /g, '') !== tNo && ansNo.includes(w.replace(/ /g, '')));
+          const hit = (p.w || []).find(w => nq(w).replace(/ /g, '') !== tNo && ansNo.includes(nq(w).replace(/ /g, '')));
           if (hit) note = `‘${hit}’${/[가-힣]$/.test(hit) && dec(hit.slice(-1))[2] && dec(hit.slice(-1))[2] !== 'ㄹ' ? '으로' : '로'} 썼어요.`;
         }
       }
@@ -174,6 +179,11 @@
       if (endP && !gotP) res.notes.push(`문장 끝에 ‘${endP}’를 빠뜨렸어요.`);
       else if (endP && gotP && endP !== gotP) res.notes.push(`문장 끝에는 ‘${gotP}’가 아니라 ‘${endP}’를 써요.`);
       else if (!endP && gotP) res.notes.push(`이 문장은 끝에 문장부호가 없어요.`);
+      const tq = nq(sent.text);
+      const q1 = (tq.match(/'/g) || []).length, a1 = (ansClean.match(/'/g) || []).length;
+      const q2 = (tq.match(/"/g) || []).length, a2 = (ansClean.match(/"/g) || []).length;
+      if (q1 !== a1) res.notes.push(q1 > a1 ? '작은따옴표(‘ ’)를 빠뜨렸어요. 속으로 한 말이나 강조할 말을 묶어요.' : '작은따옴표가 필요 없어요.');
+      if (q2 !== a2) res.notes.push(q2 > a2 ? '큰따옴표(“ ”)를 빠뜨렸어요. 소리 내어 한 말을 묶어요.' : '큰따옴표가 필요 없어요.');
       const wantC = (sent.text.match(/,/g) || []).length, gotC = (ansClean.match(/,/g) || []).length;
       if (wantC !== gotC) res.notes.push(wantC > gotC ? '반점(,)을 빠뜨렸어요.' : '반점(,)이 필요 없어요.');
     }
@@ -234,5 +244,5 @@
     return a;
   }
 
-  G.H = { dec, clean, nospace, layout, parseAnswer, variants, grade, gridHTML, esc, josa, shuffle, align };
+  G.H = { nq, dec, clean, nospace, layout, parseAnswer, variants, grade, gridHTML, esc, josa, shuffle, align };
 })(window);

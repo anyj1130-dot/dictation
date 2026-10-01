@@ -1,7 +1,6 @@
 /* 학생 화면 */
 (function () {
   'use strict';
-  const D = window.DICT;
   const { esc, grade, gridHTML, nospace, clean, shuffle, layout, variants, josa } = window.H;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
@@ -18,12 +17,13 @@
   const ACT_NAME = Object.fromEntries(ACTS.map(a => [a.key, a.name]).concat([['review', '오답 노트 복습']]));
   const RANK_SHORT = { '백성': '백성', '선비': '선비', '정승': '정승', '영의정': '영의정', '세종대왕': '세종\n대왕' };
 
-  const ALL = D.levels.flatMap(L => L.sentences.map(s => Object.assign(s, { level: L.key })));
-  const BY_ID = Object.fromEntries(ALL.map(s => [s.id, s]));
-  const LEVEL = Object.fromEntries(D.levels.map(L => [L.key, L]));
+  // 학년 데이터는 data.js가 필요할 때 불러와요 (Data.load)
+  let ALL = [], BY_ID = {}, LEVEL = {};
+  function refreshData() { ALL = Data.all; BY_ID = Data.byId; LEVEL = Data.level; }
+  const gradeOf = (key) => Data.gradeOf(key);
   const pointOf = (sid, t) => { const s = BY_ID[sid]; return s && s.p.find(p => p.t === t); };
 
-  const state = { student: null, config: null, hist: { items: [], rounds: [] }, sem: '4-1', creds: null };
+  const state = { student: null, config: null, hist: { items: [], rounds: [] }, grade: null, sem: '', creds: null };
 
   /* ───────── 도움 함수 ───────── */
   function typeClass(ty) {
@@ -155,8 +155,15 @@
     state.student = r.student; state.config = r.config; state.creds = { cls, nick, pw };
     try { localStorage.setItem('dict_login', JSON.stringify({ cls, nick, pw, demo: API.isDemo(), server: API.isDemo() ? '' : API.serverUrl() })); localStorage.setItem('dict_cls', cls); lastCls = cls; } catch (_) {}
     try { const h = await API.call('history', { cls, nick, pw }); state.hist = { items: h.items || [], rounds: h.rounds || [] }; } catch (_) {}
-    const lastSem = (state.hist.rounds.slice(-1)[0] || [])[1];
-    if (lastSem && LEVEL[lastSem]) state.sem = LEVEL[lastSem].sem;
+    // 학년 정하기: 마지막으로 한 급수의 학년 → 이 기기에 기억한 학년 → 첫 학년
+    const lastKey = ((state.hist.rounds.slice().reverse().find(r => gradeOf(r[1])) || [])[1]) || '';
+    let saved = null; try { saved = Number(localStorage.getItem('dict_grade')) || null; } catch (_) {}
+    const g = gradeOf(lastKey) || (Data.grades.includes(saved) ? saved : Data.grades[Data.grades.length - 1]);
+    const needed = [g].concat(state.hist.items.map(r => gradeOf(r[2])).filter(Boolean));
+    await Data.loadMany(needed);
+    refreshData();
+    state.grade = g;
+    state.sem = (LEVEL[lastKey] && LEVEL[lastKey].grade === g) ? LEVEL[lastKey].sem : g + '-1';
     renderTop(); flushPending(); showHome();
   }
 
@@ -201,7 +208,7 @@
   function showHome() {
     const s = state.student, li = levelInfo(s.points);
     const note = wrongNote();
-    const levels = D.levels.filter(L => L.sem === state.sem);
+    const levels = Data.levels.filter(L => L.sem === state.sem);
     show(`
       <div class="card hello">
         ${rankBadge(li.cur.name)}
@@ -217,9 +224,12 @@
         <button class="side" id="goWeak"><span class="ic">🎯</span><b>약점 연습</b><small>자주 틀리는 유형을 연습해요</small></button>
         <button class="side" id="goStats"><span class="ic">📊</span><b>내 기록</b><small>유형별 정답률 · 시험 점수</small></button>
       </div>
-      <div class="tabs" role="tablist">
-        <button data-sem="4-1" class="${state.sem === '4-1' ? 'on' : ''}">4학년 1학기</button>
-        <button data-sem="4-2" class="${state.sem === '4-2' ? 'on' : ''}">4학년 2학기</button>
+      <div class="row" style="gap:8px;margin:18px 0 12px">
+        ${Data.grades.length > 1 ? `<div class="tabs" role="tablist" style="margin:0">${Data.grades.map(g => `<button data-grade="${g}" class="${state.grade === g ? 'on' : ''}">${g}학년</button>`).join('')}</div>` : ''}
+        <div class="tabs" role="tablist" style="margin:0">
+          <button data-sem="${state.grade}-1" class="${state.sem === state.grade + '-1' ? 'on' : ''}">${Data.grades.length > 1 ? '' : state.grade + '학년 '}1학기</button>
+          <button data-sem="${state.grade}-2" class="${state.sem === state.grade + '-2' ? 'on' : ''}">${Data.grades.length > 1 ? '' : state.grade + '학년 '}2학기</button>
+        </div>
       </div>
       <p class="sub" style="margin:0 0 12px">선생님이 알려 준 이번 주 급수를 골라요.</p>
       <div class="grid g4">
@@ -234,6 +244,13 @@
         }).join('')}
       </div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a> · <a href="${API.isDemo() ? 'teacher.html?demo' : API.linkFor('teacher.html')}">교사 화면</a></div>`);
     $$('[data-sem]').forEach(b => b.onclick = () => { state.sem = b.dataset.sem; showHome(); });
+    $$('[data-grade]').forEach(b => b.onclick = async () => {
+      const g = Number(b.dataset.grade);
+      try { await Data.load(g); } catch (e) { toast(e.message); return; }
+      refreshData(); state.grade = g; state.sem = g + '-1';
+      try { localStorage.setItem('dict_grade', String(g)); } catch (_) {}
+      showHome();
+    });
     $$('[data-lv]').forEach(b => b.onclick = () => showLevel(b.dataset.lv));
     $('#goNote').onclick = showNote;
     $('#goWeak').onclick = showWeak;
@@ -542,7 +559,7 @@
         let h = '';
         Lo.chars.forEach((c, k) => {
           h += `<span class="tile">${esc(c)}</span>`;
-          if (k < Lo.gaps.length && !/[.,?!]/.test(Lo.chars[k + 1])) h += `<button class="gap ${on[k] ? 'on' : ''}" data-g="${k}" aria-label="띄우기"></button>`;
+          if (k < Lo.gaps.length && !/[.,?!'"’”]/.test(Lo.chars[k + 1]) && !/['"‘“]/.test(c)) h += `<button class="gap ${on[k] ? 'on' : ''}" data-g="${k}" aria-label="띄우기"></button>`;
         });
         return h;
       };
@@ -778,7 +795,7 @@
       showResult({
         big: `<div class="scoreball">${n * 10}점</div>`,
         title: n === list.length ? '100점! 정말 대단해요 🎉' : '받아쓰기 시험 끝!',
-        line: `10문장 중 <b>${n}</b>문장을 맞혔어요. 틀린 낱말은 오답 노트에 들어갔어요.`,
+        line: `10문장 중 <b>${n}</b>문장을 맞혔어요.${n === list.length ? '' : ' 틀린 낱말은 오답 노트에 들어갔어요.'}`,
         res, levelKey, details, again: () => runTest(levelKey)
       });
     };
@@ -821,7 +838,7 @@
   /* ───────── 약점 연습 ───────── */
   function showWeak() {
     const st = typeStats(), note = wrongNote();
-    const types = D.types.filter(t => t !== '문장부호');
+    const types = Data.types.filter(t => t !== '문장부호');
     const rows = types.map(ty => {
       const x = st[ty] || { right: 0, wrong: 0 };
       const n = x.right + x.wrong;
@@ -838,7 +855,7 @@
   }
   function practiceType(ty) {
     const note = wrongNote().filter(e => e.ty === ty).map(e => ({ s: BY_ID[e.sid], p: pointOf(e.sid, e.t) }));
-    const semLevels = new Set(D.levels.filter(L => L.sem === state.sem).map(L => L.key));
+    const semLevels = new Set(Data.levels.filter(L => L.sem === state.sem).map(L => L.key));
     const extra = shuffle(ALL.filter(s => semLevels.has(s.level)).flatMap(s => s.p.filter(p => p.ty === ty).map(p => ({ s, p }))));
     const qs = note.slice(0, 10);
     const seen = new Set(qs.map(q => q.s.id + '|' + q.p.t));
@@ -851,7 +868,7 @@
     const st = typeStats(), s = state.student, li = levelInfo(s.points);
     const rows = Object.entries(st).map(([ty, x]) => ({ ty, n: x.right + x.wrong, rate: Math.round(x.right / (x.right + x.wrong) * 100) }))
       .sort((a, b) => a.rate - b.rate);
-    const tests = D.levels.map(L => ({ L, b: bestTest(L.key) })).filter(x => x.b !== null);
+    const tests = Data.levels.map(L => ({ L, b: bestTest(L.key) })).filter(x => x.b !== null);
     const acts = {};
     state.hist.rounds.forEach(r => { acts[r[2]] = (acts[r[2]] || 0) + 1; });
     show(`${title('📊 내 기록', true)}

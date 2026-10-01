@@ -1,13 +1,12 @@
 /* 교사 화면 */
 (function () {
   'use strict';
-  const D = window.DICT;
   const { esc } = window.H;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const ACT_NAME = { study: '보고 쓰기', choice: '빈칸 고르기', spacing: '띄어 쓰기', find: '틀린 곳', sound: '소리→글자', test: '시험', review: '복습' };
   const HIDE_TYPES = new Set(['문장', '잘못 고름']);
-  const st = { tpw: '', students: [], config: null, cls: '', tab: 'students', sem: '4-1' };
+  const st = { tpw: '', students: [], config: null, cls: '', tab: 'students', sem: (Data.grades[Data.grades.length - 1] || 4) + '-1' };
 
   function toast(msg, ms) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), ms || 2400); }
   // QR 코드 (cdnjs의 qrcodejs를 필요할 때만 불러와요)
@@ -19,8 +18,9 @@
     qrLib.then(go, () => { el.innerHTML = '<div class="muted" style="font-size:.85rem">QR을 불러오지 못했어요. 주소를 복사해서 쓰세요.</div>'; });
   }
   const call = (a, d) => API.call(a, Object.assign({ cls: st.cls, tpw: st.tpw }, d || {}));
+  const semList = () => Data.grades.flatMap(g => [g + '-1', g + '-2']);
   const fmtDate = (ms) => ms ? new Date(ms).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) : '—';
-  const levelShort = (key) => { const L = D.levels.find(x => x.key === key); return L ? L.name.replace('기초 다지기 ', '기초') : key; };
+  const levelShort = (key) => { const L = Data.levels.find(x => x.key === key); return L ? L.name.replace('기초 다지기 ', '기초') : key; };
 
   /* 로그인 · 학급 만들기 */
   function showLogin(msg) {
@@ -75,6 +75,7 @@
   }
   function remember() { try { sessionStorage.setItem('dict_t', JSON.stringify({ cls: st.cls, tpw: st.tpw, server: API.serverUrl() })); } catch (_) {} }
   async function load() {
+    await Data.loadAll();
     const r = await call('tInit');
     st.students = r.students; st.config = r.config;
   }
@@ -148,12 +149,12 @@
     let dash;
     try { dash = await dashboard(); } catch (e) { $('#tabBody').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; return; }
     const list = st.students.slice().sort((a, b) => (a.no || 999) - (b.no || 999));
-    const levels = D.levels.filter(L => L.sem === st.sem);
+    const levels = Data.levels.filter(L => L.sem === st.sem);
     $('#tabBody').innerHTML = `
       <div class="card">
         <div class="row" style="justify-content:space-between">
           <h3 style="margin:0">학생별 진행 현황</h3>
-          <div class="tabs" style="margin:0">${['4-1', '4-2'].map(s => `<button data-sem="${s}" class="${st.sem === s ? 'on' : ''}">${s.replace('-', '학년 ')}학기 시험</button>`).join('')}</div>
+          <div class="tabs" style="margin:0">${semList().map(s => `<button data-sem="${s}" class="${st.sem === s ? 'on' : ''}">${s.replace('-', '학년 ')}학기</button>`).join('')}</div>
         </div>
         ${list.length ? `<div class="tablewrap" style="margin-top:10px"><table class="t">
           <tr><th>번호</th><th>닉네임</th><th class="num">포인트</th><th>등급</th><th class="num">활동</th><th>마지막 활동</th>
@@ -250,12 +251,12 @@
 
   /* 음성 확인 */
   function tabAudio() {
-    const levels = D.levels.filter(L => L.sem === st.sem);
+    const levels = Data.levels.filter(L => L.sem === st.sem);
     levels.forEach(L => Sound.preload(L.key));
     $('#tabBody').innerHTML = `<div class="card">
       <div class="row" style="justify-content:space-between">
         <h3 style="margin:0">음성 확인</h3>
-        <div class="tabs" style="margin:0">${['4-1', '4-2'].map(s => `<button data-sem="${s}" class="${st.sem === s ? 'on' : ''}">${s.replace('-', '학년 ')}학기</button>`).join('')}</div>
+        <div class="tabs" style="margin:0">${semList().map(s => `<button data-sem="${s}" class="${st.sem === s ? 'on' : ''}">${s.replace('-', '학년 ')}학기</button>`).join('')}</div>
       </div>
       <p style="color:var(--muted);margin:6px 0 12px">문장마다 들어 보고 발음이 이상한 문장에 체크해 주세요. 체크한 목록을 복사해서 보내 주시면 고쳐요.</p>
       ${levels.map(L => `<h3 style="margin:16px 0 4px">${esc(L.name)}</h3><ul class="slist">${L.sentences.map(s => `<li>
@@ -263,7 +264,7 @@
         <button class="play" data-p="${s.id}">🔊</button><button class="play" data-ps="${s.id}">🐢</button>
         <label class="toggle"><input type="checkbox" data-bad="${s.id}"> 이상함</label></li>`).join('')}</ul>`).join('')}
       <div class="row end" style="margin-top:12px"><button class="btn" id="copyBad">체크한 문장 복사</button></div></div>`;
-    const find = id => D.levels.flatMap(L => L.sentences).find(s => s.id === id);
+    const find = id => Data.levels.flatMap(L => L.sentences).find(s => s.id === id);
     $$('[data-p]').forEach(b => b.onclick = () => Sound.play(find(b.dataset.p)).catch(e => toast(e.message)));
     $$('[data-ps]').forEach(b => b.onclick = () => Sound.play(find(b.dataset.ps), true).catch(e => toast(e.message)));
     $$('[data-sem]').forEach(b => b.onclick = () => { st.sem = b.dataset.sem; tabAudio(); });
