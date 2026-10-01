@@ -24,7 +24,7 @@
       <button class="btn" id="go" style="width:100%">들어가기</button>
       <button class="btn ghost" id="newBtn" style="width:100%;margin-top:10px">새 학급 만들기</button>
       ${noServer && !API.isDemo() ? `<div class="msg warn">서버 주소가 없어요. 체험 모드로 둘러볼 수 있어요. (체험반 / 비밀번호 1234 · 학교 코드 1234)</div><button class="btn ghost" id="demo" style="width:100%;margin-top:10px">체험 모드</button>` : ''}
-      <div id="lmsg">${msg ? `<div class="msg bad">${esc(msg)}</div>` : ''}</div></div>`;
+      <div id="lmsg">${msg ? `<div class="msg bad">${esc(msg)}</div>` : ''}</div></div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a></div>`;
     const fill = (list) => {
       $('#cls').innerHTML = list.length ? '<option value="">학급을 골라요</option>' + list.map(c => `<option ${c === st.cls ? 'selected' : ''}>${esc(c)}</option>`).join('') : '<option value="">아직 학급이 없어요 · 새 학급을 만들어 주세요</option>';
     };
@@ -228,6 +228,7 @@
   /* 음성 확인 */
   function tabAudio() {
     const levels = D.levels.filter(L => L.sem === st.sem);
+    levels.forEach(L => Sound.preload(L.key));
     $('#tabBody').innerHTML = `<div class="card">
       <div class="row" style="justify-content:space-between">
         <h3 style="margin:0">음성 확인</h3>

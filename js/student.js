@@ -130,7 +130,7 @@
         <button class="btn ghost" id="demo" style="width:100%;margin-top:10px">체험 모드로 둘러보기</button>` : ''}
       <div id="lmsg">${msg ? `<div class="msg bad">${esc(msg)}</div>` : ''}</div>
       <a class="teacherlink" href="teacher.html${API.isDemo() ? '?demo' : ''}">선생님이신가요? <b>교사 화면으로 →</b></a>
-    </div>`);
+    </div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a></div>`);
     const fill = (list) => {
       $('#cls').innerHTML = list.length
         ? `<option value="">학급을 골라요</option>` + list.map(c => `<option ${c === lastCls ? 'selected' : ''}>${esc(c)}</option>`).join('')
@@ -232,7 +232,7 @@
             <span class="stamps">${ACTS.map(a => `<i class="stamp ${d.has(a.key) ? 'on' : ''}" title="${esc(a.name)}"></i>`).join('')}</span>
           </button>`;
         }).join('')}
-      </div>`);
+      </div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a></div>`);
     $$('[data-sem]').forEach(b => b.onclick = () => { state.sem = b.dataset.sem; showHome(); });
     $$('[data-lv]').forEach(b => b.onclick = () => showLevel(b.dataset.lv));
     $('#goNote').onclick = showNote;
