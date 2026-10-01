@@ -368,3 +368,5 @@ textarea.textin{resize:vertical;font-family:inherit}
 }
 .teacherlink{display:block;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);text-decoration:none;font-size:.92rem}
 .teacherlink b{color:var(--ink);font-weight:800}
+.credit{text-align:center;color:var(--muted);font-size:.8rem;margin:18px auto 0;max-width:640px;line-height:1.6}
+.credit a{color:#8fb0ea;text-decoration:none;font-weight:700;white-space:nowrap}
