@@ -57,6 +57,9 @@
     return j;
   }
 
+  // 기본 등급표 (12단계) — Code.gs의 DEFAULT_CONFIG.levels와 같아요
+  const DEFAULT_LEVELS = [{ name: '백성', min: 0 }, { name: '서당 학생', min: 50 }, { name: '향교 학생', min: 150 }, { name: '서원 학생', min: 290 }, { name: '성균관 학생', min: 470 }, { name: '장원급제', min: 700 }, { name: '집현전 학자', min: 980 }, { name: '고을 사또', min: 1300 }, { name: '암행어사', min: 1660 }, { name: '판서', min: 2070 }, { name: '영의정', min: 2520 }, { name: '세종대왕', min: 3000 }];
+
   /* ───────── 체험 모드: 이 기기 안에서만 도는 가짜 서버 ───────── */
   const Mock = (function () {
     const KEY = 'dict_demo_db';
@@ -70,7 +73,7 @@
         test: { name: '받아쓰기 시험', right: 5, wrong: 0, finish: 0, perfect: 20, cap: 1 },
         review: { name: '오답 노트 복습', right: 3, wrong: 0, finish: 0, cleared: 2, cap: 5 }
       },
-      levels: [{ name: '백성', min: 0 }, { name: '서당 학생', min: 50 }, { name: '향교 학생', min: 150 }, { name: '서원 학생', min: 290 }, { name: '성균관 학생', min: 470 }, { name: '장원급제', min: 700 }, { name: '집현전 학자', min: 980 }, { name: '고을 사또', min: 1300 }, { name: '암행어사', min: 1660 }, { name: '판서', min: 2070 }, { name: '영의정', min: 2520 }, { name: '세종대왕', min: 3000 }]
+      levels: DEFAULT_LEVELS
     };
     function load() {
       let db = null;
@@ -91,7 +94,8 @@
     const cfgOf = (c) => {
       if (!c.config) return DEF;
       const pts = {}; Object.keys(DEF.points).forEach(k => pts[k] = Object.assign({}, DEF.points[k], (c.config.points || {})[k]));
-      const old = (c.config.levels || []).some(l => l.name === '선비');   // 예전 기본 등급표 → 새 등급표
+      const OLD = [['백성', 0], ['선비', 200], ['정승', 800], ['영의정', 1800], ['세종대왕', 3000]], lv = c.config.levels || [];
+      const old = lv.length === 5 && lv.every((l, i) => l.name === OLD[i][0] && Number(l.min) === OLD[i][1]);   // 예전 기본 등급표 그대로면 새 등급표로
       return { points: pts, levels: !old && (c.config.levels || []).length ? c.config.levels : DEF.levels };
     };
     function stu(db, b) {
@@ -237,6 +241,6 @@
     return { play, stop, preload, hasFile };
   })();
 
-  G.API = { call, serverUrl, serverId, linkFor, isDemo, setDemo, resetDemo: () => Mock.reset() };
+  G.API = { DEFAULT_LEVELS, call, serverUrl, serverId, linkFor, isDemo, setDemo, resetDemo: () => Mock.reset() };
   G.Sound = Audio2;
 })(window);

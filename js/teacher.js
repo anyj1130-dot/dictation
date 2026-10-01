@@ -221,10 +221,9 @@
         <p style="color:var(--muted);font-size:.9rem;margin:8px 0 0">‘하루 횟수’는 같은 급수·같은 활동에서 하루에 점수를 받을 수 있는 횟수예요. 복습은 급수와 상관없이 하루 횟수예요.</p>
       </div>
       <div class="card"><h3 style="margin:0 0 10px">등급 기준</h3>
-        <table class="t"><tr><th>등급</th><th class="num">필요 점수</th></tr>
-        ${c.levels.map((l, i) => `<tr data-l="${i}"><td><input data-f="name" value="${esc(l.name)}" style="width:120px"></td><td class="num"><input type="number" data-f="min" value="${l.min}" style="width:90px" ${i === 0 ? 'disabled' : ''}></td></tr>`).join('')}</table>
+        <div id="lvTable">${levelRows(c.levels)}</div>
         <p style="color:var(--muted);font-size:.9rem;margin:8px 0 0">틀려서 점수가 기준 아래로 내려가면 등급도 내려가요.</p>
-        <div class="row end" style="margin-top:14px"><button class="btn" id="save">저장하기</button></div>
+        <div class="row" style="justify-content:space-between;margin-top:14px"><button class="btn ghost small" id="lvDefault">기본 등급표(12단계)로 바꾸기</button><button class="btn" id="save">저장하기</button></div>
       </div></div>
       <div class="card" style="margin-top:14px"><h3 style="margin:0 0 8px">교사 비밀번호 바꾸기</h3>
         <div class="row"><input class="textin" id="newPw" type="password" placeholder="새 비밀번호 (4글자 이상)" style="flex:1;min-width:180px;font-size:1rem"><button class="btn small" id="chPw">바꾸기</button></div></div>`;
@@ -238,6 +237,12 @@
       document.body.appendChild(m); drawQr($('#qrBig'), stuLink, Math.min(420, window.innerWidth - 80));
       m.querySelector('button').onclick = () => m.remove();
     };
+    $('#lvDefault').onclick = () => {
+      if (!confirm('등급 기준을 기본 등급표(백성 → 세종대왕, 12단계)로 바꿀까요? ‘저장하기’를 눌러야 적용돼요.')) return;
+      c.levels = JSON.parse(JSON.stringify(API.DEFAULT_LEVELS));
+      $('#lvTable').innerHTML = levelRows(c.levels);
+      toast('바꿨어요. ‘저장하기’를 눌러 주세요.');
+    };
     $('#chPw').onclick = async () => {
       const newPw = $('#newPw').value.trim();
       try { await call('tChangeTeacherPw', { newPw }); st.tpw = newPw; remember(); $('#newPw').value = ''; toast('교사 비밀번호를 바꿨어요.'); } catch (e) { toast(e.message); }
@@ -247,6 +252,11 @@
       $$('tr[data-l]').forEach(tr => { const i = Number(tr.dataset.l); c.levels[i].name = $('[data-f=name]', tr).value.trim() || c.levels[i].name; c.levels[i].min = i === 0 ? 0 : Number($('[data-f=min]', tr).value) || 0; });
       try { const r = await call('tSaveConfig', { config: c }); st.config = r.config; toast('저장했어요. 학생이 다시 들어오면 적용돼요.'); } catch (e) { toast(e.message); }
     };
+  }
+
+  function levelRows(levels) {
+    return `<table class="t"><tr><th>레벨</th><th>등급</th><th class="num">필요 점수</th></tr>
+      ${levels.map((l, i) => `<tr data-l="${i}"><td class="num" style="color:var(--muted)">${i + 1}</td><td><input data-f="name" value="${esc(l.name)}" style="width:130px"></td><td class="num"><input type="number" data-f="min" value="${l.min}" style="width:90px" ${i === 0 ? 'disabled' : ''}></td></tr>`).join('')}</table>`;
   }
 
   /* 음성 확인 */
