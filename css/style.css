@@ -370,3 +370,12 @@ textarea.textin{resize:vertical;font-family:inherit}
 .teacherlink b{color:var(--ink);font-weight:800}
 .credit{text-align:center;color:var(--muted);font-size:.8rem;margin:18px auto 0;max-width:640px;line-height:1.6}
 .credit a{color:#8fb0ea;text-decoration:none;font-weight:700;white-space:nowrap}
+.qrbox{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.qr{background:#fff;padding:10px;border-radius:12px;display:inline-block;line-height:0}
+.qr img,.qr canvas{display:block}
+@media (max-width:600px){
+  table.t td input{width:44px!important;padding:5px 4px;font-size:.9rem}
+  table.t td:first-child{min-width:84px;font-size:.88rem}
+  table.t th,table.t td{padding:7px 3px}
+  table.t th{font-size:.78rem}
+}
