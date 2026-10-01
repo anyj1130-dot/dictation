@@ -154,9 +154,15 @@
       tChangeTeacherPw(b, db) { const c = teacher(db, b); if (S(b.newPw).length < 4) throw new Error('새 비밀번호는 4글자 이상으로 정해 주세요.'); c.pw = S(b.newPw); return {}; },
       tDashboard(b, db) {
         const c = teacher(db, b); const dash = {};
-        db.students.filter(s => s.cls === c.name).forEach(s => dash[s.id] = { types: {}, acts: {}, tests: {}, rounds: 0, lastDay: '' });
-        db.rounds.forEach(r => { const d = dash[r[2]]; if (!d) return; d.rounds++; d.acts[r[5]] = (d.acts[r[5]] || 0) + 1; if (r[1] > d.lastDay) d.lastDay = r[1]; if (r[5] === 'test' && r[7]) d.tests[r[4]] = Math.max(d.tests[r[4]] || 0, Math.round(r[6] / r[7] * 100)); });
-        db.items.forEach(r => { const d = dash[r[1]]; if (!d) return; const k = r[5] || '기타'; d.types[k] = d.types[k] || [0, 0]; d.types[k][r[6] ? 0 : 1]++; });
+        db.students.filter(s => s.cls === c.name).forEach(s => dash[s.id] = { types: {}, acts: {}, tests: {}, rounds: 0, lastDay: '', byDay: {}, words: {}, items: 0, right: 0 });
+        db.rounds.forEach(r => { const d = dash[r[2]]; if (!d) return; d.rounds++; d.acts[r[5]] = (d.acts[r[5]] || 0) + 1; if (r[1] > d.lastDay) d.lastDay = r[1]; d.byDay[r[1]] = (d.byDay[r[1]] || 0) + 1; if (r[5] === 'test' && r[7]) d.tests[r[4]] = Math.max(d.tests[r[4]] || 0, Math.round(r[6] / r[7] * 100)); });
+        db.items.forEach(r => {
+          const d = dash[r[1]]; if (!d) return; const k = r[5] || '기타'; d.types[k] = d.types[k] || [0, 0]; d.types[k][r[6] ? 0 : 1]++;
+          if (k === '문장' || k === '잘못 고름' || !r[4]) return;
+          d.items++; if (r[6]) d.right++;
+          const w = d.words[r[4] + '|' + k] = d.words[r[4] + '|' + k] || [0, 0, 0]; w[r[6] ? 1 : 0]++; w[2] = r[6] ? 1 : 0;
+        });
+        Object.values(dash).forEach(d => { d.words = Object.keys(d.words).filter(k => d.words[k][0] > 0).sort((a, b) => d.words[b][0] - d.words[a][0]).slice(0, 12).map(k => k.split('|').concat(d.words[k])); });
         return { dash };
       },
       tSaveConfig(b, db) { const c = teacher(db, b); c.config = b.config; return { config: c.config }; }

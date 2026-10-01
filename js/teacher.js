@@ -82,14 +82,14 @@
 
   /* 틀 */
   function render() {
-    const tabs = [['students', '학생 관리'], ['progress', '진행 현황'], ['weak', '약점 분석'], ['points', '설정·QR'], ['audio', '음성 확인']];
+    const tabs = [['students', '학생 관리'], ['progress', '진행 현황'], ['weak', '약점 분석'], ['report', '리포트'], ['points', '설정·QR'], ['audio', '음성 확인']];
     $('#me').innerHTML = `${API.isDemo() ? '<span class="pending">체험 모드</span>' : ''}<span class="rank"><span class="dot">반</span>${esc(st.cls)}</span><a class="linkbtn hide-sm" href="${API.isDemo() ? './?demo' : API.linkFor('')}">학생 화면</a><button class="linkbtn" id="out">나가기</button>`;
     $('#out').onclick = () => { try { sessionStorage.removeItem('dict_t'); } catch (_) {} API.setDemo(false); location.reload(); };
     $('#main').innerHTML = `
       <div class="tabs" style="margin:0">${tabs.map(([k, n]) => `<button data-tab="${k}" class="${st.tab === k ? 'on' : ''}">${n}</button>`).join('')}</div>
       <div id="tabBody" style="margin-top:14px"></div>`;
     $$('[data-tab]').forEach(b => b.onclick = () => { st.tab = b.dataset.tab; render(); });
-    ({ students: tabStudents, progress: tabProgress, weak: tabWeak, points: tabPoints, audio: tabAudio })[st.tab]();
+    ({ students: tabStudents, progress: tabProgress, weak: tabWeak, report: tabReport, points: tabPoints, audio: tabAudio })[st.tab]();
   }
 
   /* 학생 관리 */
@@ -198,6 +198,145 @@
           : '<div class="empty">학생이 없어요.</div>'}
         <p style="color:var(--muted);margin:10px 0 0;font-size:.9rem">3문항 이상 푼 유형만 보여 줘요.</p>
       </div></div>`;
+  }
+
+  /* ───────── 학생별 리포트 (인쇄) ───────── */
+  const TYPE_TIP = {
+    '받침': "받침이 뒤 글자로 넘어가 소리 나는 낱말(꽃이, 무릎이)을 '꽃+이'처럼 나누어 말해 보며 써 보게 해 주세요.",
+    '겹받침': "'넓다, 밟다, 앉다'처럼 받침이 두 개인 낱말을 모아 소리와 글자를 비교해 보게 해 주세요.",
+    '연음': "'얼굴이[얼구리]'처럼 소리 나는 낱말을 '얼굴+이'로 나누어 써 보게 해 주세요.",
+    '된소리': "[꺼], [쏘]처럼 세게 소리 나도 글자는 예사소리로 쓰는 낱말을 함께 찾아보면 좋아요.",
+    '거센소리': "ㅎ과 만나 [ㅋ·ㅌ·ㅊ·ㅍ]로 소리 나는 낱말(어떻게, 따뜻한)을 소리와 글자로 비교해 보게 해 주세요.",
+    '구개음화': "'같이[가치]', '닫혀[다처]'처럼 소리와 글자가 다른 낱말을 따로 모아 익히게 해 주세요.",
+    '사이시옷': "'햇살, 빗방울'처럼 두 낱말 사이에 ㅅ이 들어가는 말을 모아 보게 해 주세요.",
+    '모음': "'ㅐ/ㅔ', 'ㅚ/ㅙ/ㅞ'처럼 소리가 비슷한 모음을 천천히 또박또박 읽고 쓰게 해 주세요.",
+    '띄어쓰기': "문장을 읽을 때 쉬는 곳에서 손뼉을 치며 낱말 단위를 느껴 보게 해 주세요.",
+    '문장부호': "문장을 다 쓴 뒤 끝에 온점·물음표·느낌표를 찍었는지 스스로 확인하는 습관을 길러 주세요.",
+    '헷갈리는 말': "'반드시/반듯이', '작다/적다'처럼 헷갈리는 낱말을 뜻과 함께 짝지어 익히게 해 주세요.",
+    '준말': "'되어→돼', '주어→줘'처럼 줄어든 말을 원래 말로 늘려 보며 확인하게 해 주세요.",
+    '소리 나는 대로': "소리 나는 대로 쓰는 실수가 많아요. 낱말을 또박또박 끊어 읽은 뒤 쓰게 해 주세요."
+  };
+  const noteKey = (id) => 'dict_note|' + st.cls + '|' + id;
+  const getNote = (id) => { try { return localStorage.getItem(noteKey(id)) || ''; } catch (_) { return ''; } };
+  const setNote = (id, v) => { try { localStorage.setItem(noteKey(id), v); } catch (_) {} };
+
+  async function tabReport() {
+    let dash;
+    try { dash = await dashboard(); } catch (e) { $('#tabBody').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; return; }
+    const list = st.students.slice().sort((a, b) => (a.no || 999) - (b.no || 999));
+    $('#tabBody').innerHTML = `
+      <div class="card no-print">
+        <h3 style="margin:0 0 4px">학생별 학습 리포트</h3>
+        <p class="muted" style="margin:0 0 12px;font-size:.92rem">학생을 고르고 ‘리포트 만들기’를 누르면 한 장에 한 명씩 인쇄할 수 있어요. 학부모 상담이나 기록 자료로 쓰세요.</p>
+        <div class="row" style="gap:8px;margin-bottom:10px"><button class="btn ghost small" id="rpAll">모두 고르기</button><button class="btn ghost small" id="rpNone">모두 빼기</button></div>
+        <div class="rpick">${list.map(s => `<label><input type="checkbox" value="${esc(s.id)}" checked> <span>${esc(s.no || '')}</span> ${esc(s.nick)}</label>`).join('') || '<div class="empty">학생이 없어요.</div>'}</div>
+        <div class="row end" style="margin-top:12px;gap:8px"><button class="btn" id="rpMake">리포트 만들기</button></div>
+      </div>
+      <div id="rpBar" class="row no-print" style="justify-content:space-between;margin:16px 0 10px;display:none">
+        <span class="muted" id="rpCount"></span>
+        <button class="btn" id="rpPrint">🖨 인쇄하기</button>
+      </div>
+      <div id="reports"></div>`;
+    $('#rpAll').onclick = () => $$('.rpick input').forEach(i => i.checked = true);
+    $('#rpNone').onclick = () => $$('.rpick input').forEach(i => i.checked = false);
+    $('#rpMake').onclick = () => {
+      const ids = $$('.rpick input:checked').map(i => i.value);
+      if (!ids.length) { toast('학생을 한 명 이상 골라 주세요.'); return; }
+      const picked = list.filter(s => ids.includes(s.id));
+      $('#reports').innerHTML = picked.map(s => reportHTML(s, dash[s.id] || {})).join('');
+      $('#rpBar').style.display = 'flex';
+      $('#rpCount').textContent = `${picked.length}명 · 선생님 한마디 칸은 눌러서 바로 쓸 수 있어요 (이 컴퓨터에 저장돼요).`;
+      $$('#reports [data-note]').forEach(el => el.oninput = () => setNote(el.dataset.note, el.innerText));
+      $('#rpBar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    $('#rpPrint').onclick = () => { fitReports(); window.print(); };
+    window.onbeforeprint = fitReports;
+  }
+
+  // 한 장에 들어가도록: A4 인쇄 영역(190×277mm ≈ 718×1047px)보다 길면 그만큼 줄여요
+  function fitReports() {
+    $$('#reports .report').forEach(r => {
+      r.style.removeProperty('--fit');
+      const cs = getComputedStyle(r), h = r.scrollHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const w = r.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const pageH = 1040 * (w / 718);   // 화면 너비 기준으로 환산
+      r.style.setProperty('--fit', Math.min(1, pageH / h).toFixed(3));
+    });
+  }
+  function reportHTML(s, d) {
+    const today = new Date().toLocaleDateString('sv-SE');
+    const levels = (st.config.levels || []).slice().sort((a, b) => a.min - b.min);
+    let li = 0; levels.forEach((l, k) => { if (s.points >= l.min) li = k; });
+    const next = levels[li + 1];
+    const days = Object.keys(d.byDay || {}).sort();
+    const rate = d.items ? Math.round(d.right / d.items * 100) : null;
+    // 유형별
+    const types = Object.entries(d.types || {}).filter(([t]) => !HIDE_TYPES.has(t))
+      .map(([t, [r, w]]) => ({ t, n: r + w, rate: Math.round(r / (r + w) * 100) })).filter(x => x.n > 0).sort((a, b) => a.rate - b.rate || b.n - a.n);
+    const enough = types.filter(x => x.n >= 5);
+    const weak = enough.filter(x => x.rate < 80).slice(0, 2);
+    const strong = enough.slice().sort((a, b) => b.rate - a.rate || b.n - a.n).filter(x => x.rate >= 90 && !weak.includes(x)).slice(0, 2);
+    // 시험
+    const sems = [];
+    Data.grades.forEach(g => [g + '-1', g + '-2'].forEach(sem => {
+      const Ls = Data.levels.filter(L => L.sem === sem);
+      if (Ls.some(L => d.tests && d.tests[L.key] !== undefined)) sems.push({ sem, Ls });
+    }));
+    // 최근 8주 활동 (월요일 시작)
+    const mon = (dt) => { const x = new Date(dt); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+    const weeks = []; const w0 = mon(new Date());
+    for (let k = 7; k >= 0; k--) { const a = new Date(w0); a.setDate(a.getDate() - 7 * k); weeks.push({ a, n: 0 }); }
+    days.forEach(day => { const t = mon(new Date(day + 'T00:00:00')).getTime(); const w = weeks.find(x => x.a.getTime() === t); if (w) w.n += d.byDay[day]; });
+    const wmax = Math.max(1, ...weeks.map(w => w.n));
+    const acts = Object.entries(ACT_NAME).map(([k, n]) => `<span>${esc(n)} <b>${(d.acts || {})[k] || 0}</b></span>`).join('');
+    // 요약 문장
+    let summary;
+    if (!d.items || d.items < 10) summary = '아직 기록이 많지 않아요. 조금 더 연습한 뒤에 다시 보면 강점과 약점이 더 또렷하게 보여요.';
+    else {
+      summary = '';
+      if (strong.length) { const last = strong[strong.length - 1].t; summary += `${strong.map(x => `‘${esc(x.t)}’`).join(', ')}${window.H.josa(last, '은/는').slice(last.length)} 정확하게 잘 써요. `; }
+      if (weak.length) summary += `${weak.map(x => `‘${esc(x.t)}’`).join(', ')} 유형에서 자주 틀려요.`;
+      else summary += '눈에 띄게 약한 유형 없이 고르게 잘하고 있어요.';
+    }
+    const tips = weak.map(x => TYPE_TIP[x.t]).filter(Boolean);
+    return `<section class="report">
+      <div class="rp-head">
+        <div><div class="rp-title">받아쓰기 학습 리포트</div>
+          <div class="rp-sub">${esc(st.cls)} · ${esc(s.no || '')}번 · <b>${esc(s.nick)}</b></div></div>
+        <div class="rp-date">출력일 ${today}${days.length ? `<br>기록 ${days[0]} ~ ${days[days.length - 1]}` : ''}</div>
+      </div>
+      <div class="rp-stats">
+        <div><small>등급</small><b>Lv.${li + 1} ${esc(levels[li] ? levels[li].name : '')}</b><span>${s.points}점${next ? ` · 다음 등급까지 ${next.min - s.points}점` : ''}</span></div>
+        <div><small>연습한 날</small><b>${days.length}일</b><span>마지막 ${d.lastDay || '—'}</span></div>
+        <div><small>활동</small><b>${d.rounds || 0}회</b><span>시험 ${(d.acts || {}).test || 0}회</span></div>
+        <div><small>낱말 정답률</small><b>${rate === null ? '—' : rate + '%'}</b><span>${d.items || 0}문항</span></div>
+      </div>
+      <div class="rp-summary">${summary}</div>
+      <div class="rp-grid">
+        <div class="rp-box"><h4>유형별 정답률</h4>
+          ${types.length ? `<div class="rp-bars">${types.map(x => `<div class="${weak.includes(x) ? 'weak' : ''}"><span>${esc(x.t)}</span><i><em style="width:${x.rate}%"></em></i><b>${x.rate}%</b><small>${x.n}</small></div>`).join('')}</div>
+            <p class="rp-note">오른쪽 작은 숫자는 푼 문항 수예요. 문항이 적으면 정답률이 크게 흔들릴 수 있어요.</p>` : '<p class="rp-empty">아직 기록이 없어요.</p>'}
+        </div>
+        <div class="rp-box"><h4>자주 틀린 낱말</h4>
+          ${(d.words || []).length ? `<table class="rp-t"><tr><th>낱말</th><th>유형</th><th>틀림</th><th>최근</th></tr>${d.words.slice(0, 10).map(w => `<tr><td><b>${esc(w[0])}</b></td><td>${esc(w[1])}</td><td>${w[2]}번</td><td>${w[4] ? '<span class="ok">○ 맞힘</span>' : '<span class="bad">× 틀림</span>'}</td></tr>`).join('')}</table>
+            <p class="rp-note">‘최근’은 그 낱말을 마지막으로 풀었을 때의 결과예요.</p>` : '<p class="rp-empty">틀린 낱말이 없어요.</p>'}
+        </div>
+      </div>
+      <div class="rp-box rp-tests"><h4>받아쓰기 시험 최고 점수</h4>
+        ${sems.length ? sems.map(x => `<div class="rp-sem"><span class="lab">${x.sem.replace('-', '학년 ')}학기</span><div class="cells">${x.Ls.map(L => { const v = d.tests[L.key]; return `<span class="${v === undefined ? 'none' : v === 100 ? 'full' : v < 60 ? 'low' : ''}"><small>${esc(L.name.replace('기초 다지기 ', '기초'))}</small>${v === undefined ? '·' : v}</span>`; }).join('')}</div></div>`).join('') : '<p class="rp-empty">아직 시험을 보지 않았어요.</p>'}
+      </div>
+      <div class="rp-grid">
+        <div class="rp-box"><h4>최근 8주 활동</h4>
+          <div class="rp-weeks">${weeks.map(w => `<div><b>${w.n || ''}</b><i style="height:${Math.round(w.n / wmax * 100)}%"></i><small>${w.a.getMonth() + 1}/${w.a.getDate()}</small></div>`).join('')}</div>
+          <div class="rp-acts">${acts}</div>
+        </div>
+        <div class="rp-box rp-tips"><h4>가정에서 이렇게 도와주세요</h4>
+          ${tips.length ? `<ul>${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : `<p style="margin:0">${d.items >= 10 ? '지금처럼 매일 조금씩 소리 내어 읽고 써 보게 해 주세요. 틀린 낱말은 앱의 ‘오답 노트’에서 다시 연습할 수 있어요.' : '하루 10분씩 앱에서 연습하도록 격려해 주세요. 기록이 쌓이면 더 자세한 도움말을 드릴 수 있어요.'}</p>`}
+        </div>
+      </div>
+      <div class="rp-box rp-teacher"><h4>선생님 한마디</h4><div class="rp-write" contenteditable="true" data-note="${esc(s.id)}">${esc(getNote(s.id))}</div></div>
+      <div class="rp-foot">차근차근 받아쓰기 · 문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」</div>
+    </section>`;
   }
 
   /* 포인트 설정 */
