@@ -241,6 +241,7 @@
 
   /* ───────── 급수 화면 ───────── */
   function showLevel(key) {
+    Sound.preload(key);
     const L = LEVEL[key], d = doneActs(key);
     show(`${title(`${L.sem.replace('-', '학년 ')}학기 · ${esc(L.name)}`, true)}
       <div class="grid g2">
