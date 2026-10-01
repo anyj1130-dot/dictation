@@ -46,7 +46,10 @@
     try {
       res = await fetch(serverUrl(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
     } catch (e) {
-      const err = new Error('인터넷 연결을 확인해 주세요.'); err.network = true; throw err;
+      const err = new Error(navigator.onLine === false
+        ? '인터넷 연결을 확인해 주세요.'
+        : '선생님 서버에 연결하지 못했어요. (선생님 확인: 웹 앱 배포의 액세스 권한이 ‘모든 사용자’인지 봐 주세요)');
+      err.network = true; throw err;
     }
     let j;
     try { j = await res.json(); } catch (e) { const err = new Error('서버 응답을 읽지 못했어요. 잠시 뒤 다시 해 보세요.'); err.network = true; throw err; }
@@ -67,7 +70,7 @@
         test: { name: '받아쓰기 시험', right: 5, wrong: 0, finish: 0, perfect: 20, cap: 1 },
         review: { name: '오답 노트 복습', right: 3, wrong: 0, finish: 0, cleared: 2, cap: 5 }
       },
-      levels: [{ name: '백성', min: 0 }, { name: '선비', min: 200 }, { name: '정승', min: 800 }, { name: '영의정', min: 1800 }, { name: '세종대왕', min: 3000 }]
+      levels: [{ name: '백성', min: 0 }, { name: '서당 학생', min: 50 }, { name: '향교 학생', min: 150 }, { name: '서원 학생', min: 290 }, { name: '성균관 학생', min: 470 }, { name: '장원급제', min: 700 }, { name: '집현전 학자', min: 980 }, { name: '고을 사또', min: 1300 }, { name: '암행어사', min: 1660 }, { name: '판서', min: 2070 }, { name: '영의정', min: 2520 }, { name: '세종대왕', min: 3000 }]
     };
     function load() {
       let db = null;
@@ -85,7 +88,12 @@
     const S = (v) => String(v === undefined || v === null ? '' : v).trim();
     const levelOf = (p, c) => { let n = c.levels[0].name; c.levels.slice().sort((a, b) => a.min - b.min).forEach(l => { if (p >= l.min) n = l.name; }); return n; };
     function cls(db, name) { const c = db.classes.find(x => x.name === S(name)); if (!c) throw new Error('학급을 찾지 못했어요.'); return c; }
-    const cfgOf = (c) => c.config || DEF;
+    const cfgOf = (c) => {
+      if (!c.config) return DEF;
+      const pts = {}; Object.keys(DEF.points).forEach(k => pts[k] = Object.assign({}, DEF.points[k], (c.config.points || {})[k]));
+      const old = (c.config.levels || []).some(l => l.name === '선비');   // 예전 기본 등급표 → 새 등급표
+      return { points: pts, levels: !old && (c.config.levels || []).length ? c.config.levels : DEF.levels };
+    };
     function stu(db, b) {
       if (!S(b.cls)) throw new Error('학급을 골라 주세요.');
       const s = db.students.find(x => x.cls === S(b.cls) && x.nick === S(b.nick));

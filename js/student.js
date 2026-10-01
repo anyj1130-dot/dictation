@@ -15,7 +15,10 @@
     { key: 'test', n: 6, name: '듣고 받아쓰기 시험', desc: '10문장을 듣고 써요 · 100점 도전' }
   ];
   const ACT_NAME = Object.fromEntries(ACTS.map(a => [a.key, a.name]).concat([['review', '오답 노트 복습']]));
-  const RANK_SHORT = { '백성': '백성', '선비': '선비', '정승': '정승', '영의정': '영의정', '세종대왕': '세종\n대왕' };
+  const RANK_SHORT = { '백성': '백성', '서당 학생': '서당', '향교 학생': '향교', '서원 학생': '서원', '성균관 학생': '성균관', '장원급제': '장원\n급제',
+    '집현전 학자': '집현전', '고을 사또': '사또', '암행어사': '암행\n어사', '판서': '판서', '영의정': '영의정', '세종대왕': '세종\n대왕', '선비': '선비', '정승': '정승' };
+  // 레벨이 오를수록 배지 색이 바뀌어요 (초록 → 파랑 → 보라 → 빨강 → 금색)
+  const RANK_COLORS = ['#5f7d6e', '#3f8f6b', '#2f9a8a', '#2f86a6', '#3b6fc4', '#5a5fd0', '#7a52c9', '#a04fb8', '#c4477a', '#d4543f', '#d9822b', '#d4a017'];
 
   // 학년 데이터는 data.js가 필요할 때 불러와요 (Data.load)
   let ALL = [], BY_ID = {}, LEVEL = {};
@@ -53,9 +56,15 @@
     let i = 0; L.forEach((l, k) => { if (points >= l.min) i = k; });
     const cur = L[i], next = L[i + 1];
     const pct = next ? Math.round((points - cur.min) / (next.min - cur.min) * 100) : 100;
-    return { cur, next, pct };
+    return { cur, next, pct, no: i + 1 };
   }
-  function rankBadge(name, cls) { return `<div class="${cls || 'rankbig'}">${esc(RANK_SHORT[name] || name).replace('\n', '<br>')}</div>`; }
+  function sortedLevels() { return (state.config.levels || []).slice().sort((a, b) => a.min - b.min); }
+  function lvNo(name) { const i = sortedLevels().findIndex(l => l.name === name); return i < 0 ? 1 : i + 1; }
+  function rankColor(name) { const n = sortedLevels().length, i = lvNo(name) - 1; return RANK_COLORS[Math.round(i / Math.max(1, n - 1) * (RANK_COLORS.length - 1))]; }
+  function shortName(name) { return RANK_SHORT[name] || (name.length > 4 ? name.slice(0, 3) : name); }
+  function rankBadge(name, cls) {
+    return `<div class="${cls || 'rankbig'}" style="background:${rankColor(name)}"><small>Lv.${lvNo(name)}</small><span class="${shortName(name).replace('\n', '').length >= 3 && !shortName(name).includes('\n') ? 'long' : ''}">${esc(shortName(name)).replace('\n', '<br>')}</span></div>`;
+  }
 
   /* ───────── 저장 (실패 시 대기열) ───────── */
   const PKEY = 'dict_pending';
@@ -101,7 +110,7 @@
     if (!state.student) { box.innerHTML = ''; return; }
     const p = pending().length;
     box.innerHTML = `${p ? `<span class="pending" title="인터넷이 연결되면 저장돼요">저장 대기 ${p}</span>` : ''}
-      <span class="rank"><span class="dot">${esc(state.student.level[0])}</span>${esc(state.student.nick)} · ${esc(state.student.level)}</span>
+      <span class="rank"><span class="dot" style="background:${rankColor(state.student.level)}">${lvNo(state.student.level)}</span>${esc(state.student.nick)}<span class="hide-sm"> · ${esc(state.student.level)}</span></span>
       <span class="pts">${state.student.points}점</span>
       <button class="linkbtn" id="logout">나가기</button>`;
     $('#logout').onclick = logout;
@@ -214,7 +223,7 @@
         ${rankBadge(li.cur.name)}
         <div style="flex:1;min-width:220px">
           <div class="big" style="font-size:1.25rem;font-weight:800">${esc(s.nick)}, 반가워요!</div>
-          <div style="color:var(--muted)">지금 <b style="color:var(--ink)">${esc(li.cur.name)}</b> · ${s.points}점
+          <div style="color:var(--muted)">지금 <b style="color:var(--ink)">Lv.${li.no} ${esc(li.cur.name)}</b> · ${s.points}점
             ${li.next ? ` · <b>${esc(li.next.name)}</b>까지 ${li.next.min - s.points}점` : ' · 최고 등급이에요!'}</div>
           <div class="progress"><i style="width:${li.pct}%"></i></div>
         </div>
@@ -311,12 +320,16 @@
     if (r.level && r.levelBefore && r.level !== r.levelBefore) rankModal(r.levelBefore, r.level);
   }
   function rankModal(before, after) {
-    const order = (state.config.levels || []).map(l => l.name);
-    const up = order.indexOf(after) > order.indexOf(before);
-    const m = document.createElement('div'); m.className = 'modal';
-    m.innerHTML = `<div class="box">${rankBadge(after, 'rankbig' + (up ? '' : ' down'))}
-      <h2 style="margin:4px 0">${up ? `${esc(josa(after, '이/가'))} 되었어요!` : `${esc(josa(after, '으로/로'))} 내려왔어요`}</h2>
-      <p style="color:var(--muted)">${up ? '차근차근 연습한 덕분이에요. 다음 등급에도 도전해요!' : '틀린 낱말을 오답 노트에서 다시 연습하면 금방 올라갈 수 있어요.'}</p>
+    const up = lvNo(after) > lvNo(before);
+    const li = levelInfo(state.student.points);
+    const m = document.createElement('div'); m.className = 'modal' + (up ? ' levelup' : '');
+    const conf = up ? `<div class="confetti">${Array.from({ length: 28 }, (_, k) => `<i style="left:${(k * 37) % 100}%;background:${RANK_COLORS[k % RANK_COLORS.length]};animation-delay:${(k % 7) * 0.12}s;animation-duration:${1.6 + (k % 5) * 0.25}s"></i>`).join('')}</div>` : '';
+    const goal = li.next ? `다음은 <b>Lv.${li.no + 1} ${esc(li.next.name)}</b> · ${li.next.min - state.student.points}점 남았어요` : '가장 높은 등급이에요. 정말 대단해요!';
+    m.innerHTML = `${conf}<div class="box">
+      ${up ? `<div class="lvtag">LEVEL UP!</div>` : ''}
+      ${rankBadge(after, 'rankbig' + (up ? '' : ' down'))}
+      <h2 style="margin:4px 0">${up ? `Lv.${lvNo(after)} ${esc(josa(after, '이/가'))} 되었어요!` : `${esc(josa(after, '으로/로'))} 내려왔어요`}</h2>
+      <p style="color:var(--muted)">${up ? goal : '틀린 낱말을 오답 노트에서 다시 연습하면 금방 올라갈 수 있어요.'}</p>
       <button class="btn" style="width:100%">좋아요</button></div>`;
     document.body.appendChild(m);
     m.querySelector('button').onclick = () => m.remove();
@@ -882,9 +895,9 @@
         </div>
         <div class="grid" style="gap:14px">
           <div class="card"><h3 style="margin:0 0 6px">등급</h3>
-            <div style="font-size:1.1rem"><b>${esc(li.cur.name)}</b> · ${s.points}점</div>
+            <div style="font-size:1.1rem"><b>Lv.${li.no} ${esc(li.cur.name)}</b> · ${s.points}점</div>
             <div class="progress"><i style="width:${li.pct}%"></i></div>
-            <div style="color:var(--muted);margin-top:6px">${(state.config.levels || []).map(l => `${esc(l.name)} ${l.min}`).join(' → ')}</div></div>
+            <ol class="ladder">${sortedLevels().map((l, k) => `<li class="${k + 1 < li.no ? 'done' : k + 1 === li.no ? 'now' : ''}"><i style="background:${k + 1 <= li.no ? rankColor(l.name) : 'transparent'}">${k + 1}</i><b>${esc(l.name)}</b><span>${l.min}점</span></li>`).join('')}</ol></div>
           <div class="card"><h3 style="margin:0 0 6px">급수별 시험 최고 점수</h3>
             ${tests.length ? `<table class="t">${tests.map(x => `<tr><td>${x.L.sem.replace('-', '-')} ${esc(x.L.name)}</td><td class="num"><b>${x.b}</b>점</td></tr>`).join('')}</table>` : '<div class="empty">아직 시험을 보지 않았어요.</div>'}</div>
           <div class="card"><h3 style="margin:0 0 6px">활동한 횟수</h3>
