@@ -140,7 +140,20 @@
 
   /* ───────── 음성 ───────── */
   const Audio2 = (function () {
+    // 음성 파일: audio/급수키.js 안에 문장별 mp3(base64)가 들어 있어요 → window.AUDIO_DATA[문장ID] = {n, s}
+    G.AUDIO_DATA = G.AUDIO_DATA || {};
+    const loaded = {};   // 급수키 → 'loading' | 'ok' | 'none'
     let cur = null;
+    const levelOf = (id) => String(id).split('_').slice(0, 2).join('_');
+    function preload(levelKey) {
+      if (!levelKey || loaded[levelKey]) return;
+      loaded[levelKey] = 'loading';
+      const sc = document.createElement('script');
+      sc.src = 'audio/' + levelKey + '.js?v=3';
+      sc.onload = () => { loaded[levelKey] = 'ok'; };
+      sc.onerror = () => { loaded[levelKey] = 'none'; sc.remove(); };
+      document.head.appendChild(sc);
+    }
     function stop() {
       if (cur) { try { cur.pause(); } catch (_) {} cur = null; }
       try { if ('speechSynthesis' in G) speechSynthesis.cancel(); } catch (_) {}
@@ -148,34 +161,49 @@
     function tts(text, slow) {
       return new Promise((resolve, reject) => {
         if (!('speechSynthesis' in G)) return reject(new Error('no-tts'));
+        try { speechSynthesis.cancel(); speechSynthesis.resume(); } catch (_) {}
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'ko-KR';
         u.rate = slow ? 0.6 : 0.85;
         const ko = speechSynthesis.getVoices().find(v => /^ko/i.test(v.lang));
         if (ko) u.voice = ko;
+        let started = false;
+        u.onstart = () => { started = true; };
         u.onend = () => resolve('tts');
-        u.onerror = () => reject(new Error('tts-error'));
+        u.onerror = (e) => reject(new Error('tts-' + (e && e.error)));
         speechSynthesis.speak(u);
+        setTimeout(() => { if (!started && !speechSynthesis.speaking) reject(new Error('tts-silent')); }, 2500);
       });
     }
-    // 음성 파일(audio/문장ID.mp3, 천천히: 문장ID_slow.mp3)을 먼저 쓰고, 없으면 기기 음성으로 읽음
+    function playData(b64) {
+      return new Promise((resolve, reject) => {
+        const a = new Audio('data:audio/mpeg;base64,' + b64);
+        cur = a;
+        a.onended = () => resolve('file');
+        a.onerror = () => reject(new Error('file-error'));
+        const p = a.play();
+        if (p && p.catch) p.catch(err => reject(err && err.name === 'NotAllowedError' ? new Error('화면을 한 번 누른 뒤 다시 들어 보세요.') : new Error('file-error')));
+      });
+    }
+    const FAIL = '음성 파일이 아직 없고, 이 기기의 음성 기능도 쓸 수 없어요. 선생님께 알려 주세요.';
     function play(sent, slow) {
       stop();
-      return new Promise((resolve, reject) => {
-        const a = new Audio('audio/' + sent.id + (slow ? '_slow' : '') + '.mp3');
-        cur = a;
-        let fellBack = false;
-        const fallback = () => {
-          if (fellBack) return; fellBack = true;
-          tts(sent.tts || sent.text, slow).then(resolve, () => reject(new Error('음성을 재생하지 못했어요. 태블릿 소리를 확인해 주세요.')));
-        };
-        a.onended = () => resolve('file');
-        a.onerror = fallback;
-        const p = a.play();
-        if (p && p.catch) p.catch(err => { if (err && err.name === 'NotAllowedError') reject(new Error('화면을 한 번 누른 뒤 다시 들어 보세요.')); else fallback(); });
-      });
+      const lv = levelOf(sent.id);
+      preload(lv);
+      const d = G.AUDIO_DATA[sent.id];
+      if (d && (slow ? d.s : d.n)) return playData(slow ? d.s : d.n).catch(e => { if (/누른/.test(e.message)) throw e; return tts(sent.text, slow).catch(() => { throw new Error(FAIL); }); });
+      // 파일이 아직 불러와지는 중이면 잠깐 기다렸다가 재생
+      if (loaded[lv] === 'loading') {
+        return new Promise((resolve) => setTimeout(resolve, 600)).then(() => {
+          const d2 = G.AUDIO_DATA[sent.id];
+          if (d2) return playData(slow ? d2.s : d2.n);
+          return tts(sent.text, slow).catch(() => { throw new Error(FAIL); });
+        });
+      }
+      return tts(sent.text, slow).catch(() => { throw new Error(FAIL); });
     }
-    return { play, stop };
+    function hasFile(id) { return !!G.AUDIO_DATA[id]; }
+    return { play, stop, preload, hasFile };
   })();
 
   G.API = { call, serverUrl, isDemo, setDemo, resetDemo: () => Mock.reset() };
