@@ -141,7 +141,7 @@
         <button class="btn ghost" id="demoGo" style="width:100%;margin-top:10px">체험으로 바로 들어가기</button>` : ''}
       <div id="lmsg">${msg ? `<div class="msg bad">${esc(msg)}</div>` : ''}</div>
       <a class="teacherlink" href="${API.isDemo() ? 'teacher.html?demo' : API.linkFor('teacher.html')}">선생님이신가요? <b>교사 화면으로 →</b></a>
-    </div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a></div>`);
+    </div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐육 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a></div>`);
     const fill = (list) => {
       $('#cls').innerHTML = list.length
         ? `<option value="">학급을 골라요</option>` + list.map(c => `<option ${c === lastCls ? 'selected' : ''}>${esc(c)}</option>`).join('')
@@ -254,7 +254,7 @@
             <span class="stamps">${ACTS.map(a => `<i class="stamp ${d.has(a.key) ? 'on' : ''}" title="${esc(a.name)}"></i>`).join('')}</span>
           </button>`;
         }).join('')}
-      </div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a> · <a href="${API.isDemo() ? 'teacher.html?demo' : API.linkFor('teacher.html')}">교사 화면</a></div>`);
+      </div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐육 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a> · <a href="${API.isDemo() ? 'teacher.html?demo' : API.linkFor('teacher.html')}">교사 화면</a></div>`);
     $$('[data-sem]').forEach(b => b.onclick = () => { state.sem = b.dataset.sem; showHome(); });
     $$('[data-grade]').forEach(b => b.onclick = async () => {
       const g = Number(b.dataset.grade);
