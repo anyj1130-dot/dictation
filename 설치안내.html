@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>받아쓰기 앱 관리 안내</title>
+<style>
+  :root{--bg:#f4f1ea;--card:#fff;--ink:#26231f;--muted:#6b645b;--line:#e3ddd1;--red:#d9534f;--blue:#3f6fc4;--green:#2f6e5f;--tip:#fff8e6;--warn:#fdeceb}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;font-size:16px}
+  main{max-width:860px;margin:0 auto;padding:28px 16px 70px}
+  h1{font-size:1.75rem;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 20px}
+  nav{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:18px}
+  nav b{display:block;margin-bottom:4px}
+  nav a{color:var(--blue);text-decoration:none;display:inline-block;margin:2px 14px 2px 0}
+  section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:16px;scroll-margin-top:12px}
+  h2{font-size:1.25rem;margin:0 0 4px;display:flex;gap:10px;align-items:center}
+  h3{font-size:1.05rem;margin:16px 0 4px}
+  .step{display:inline-grid;place-items:center;min-width:34px;height:34px;border-radius:10px;color:#fff;font-size:1rem;padding:0 8px}
+  .s0{background:#555}.s1{background:var(--blue)}.s2{background:var(--green)}.s3{background:var(--red)}.s4{background:#8a5cc2}.s5{background:#c98a1b}
+  .time{color:var(--muted);font-size:.92rem;margin:0 0 10px}
+  ol,ul{padding-left:1.35em;margin:8px 0} li{margin:6px 0}
+  b.ui{background:#ece7dd;border-radius:6px;padding:0 6px;font-weight:600;white-space:nowrap}
+  code{background:#f1ece2;padding:1px 6px;border-radius:6px;word-break:break-all;font-size:.92em}
+  pre{background:#f1ece2;border-radius:10px;padding:10px 14px;overflow-x:auto;font-size:.9rem;line-height:1.6}
+  .tip{background:var(--tip);border:1px dashed #e0c68a;border-radius:12px;padding:10px 14px;margin-top:10px;font-size:.95rem}
+  .warn{background:var(--warn);border:1px solid #f1b9b5;border-radius:12px;padding:10px 14px;margin-top:10px;font-size:.95rem}
+  table{border-collapse:collapse;width:100%;font-size:.95rem;margin:8px 0} td,th{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top} th{background:#efe9dd}
+  .map{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
+  .box{border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:.92rem;background:#fcfbf8}
+  .box b{display:block;font-size:1rem}
+  .box.b1{border-color:var(--blue)} .box.b2{border-color:var(--green)} .box.b3{border-color:var(--red)}
+  @media (max-width:640px){.map{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>차근차근 받아쓰기 · 관리 안내</h1>
+<p class="sub">앱을 만들어 나눠 주는 선생님(관리자)용 안내예요. 다른 선생님은 <code>start.html</code> 안내 페이지만 보면 돼요.<br>
+문장 출처: 참쌤스쿨 × 모여봐육 「22개정 차근차근 받아쓰기」 (<a href="https://chamssaem.com/516657">원본 자료</a>)</p>
+
+<nav><b>차례</b>
+  <a href="#map">0. 전체 구조</a><a href="#github">1. GitHub 화면</a><a href="#mine">2. 내 시트(우리 반)</a><a href="#tpl">3. 원본 시트</a><a href="#share">4. 나눠 주기</a><a href="#audio">5. 음성</a><a href="#update">6. 고칠 때</a><a href="#trouble">7. 문제 해결</a>
+</nav>
+
+<section id="map">
+  <h2><span class="step s0">0</span>전체 구조 — 무엇이 어디에 있나요?</h2>
+  <div class="map">
+    <div class="box b1"><b>① GitHub (화면)</b>학생 화면·교사 화면·문장·음성. <u>모든 선생님이 함께 써요.</u> 하나만 있어요.<br><code>anyj1130-dot.github.io/dictation/</code></div>
+    <div class="box b2"><b>② 내 시트 (우리 반 기록)</b>우리 반 학급·학생·점수가 쌓여요. <u>배포해서 씁니다.</u></div>
+    <div class="box b3"><b>③ 원본 시트 (빈 틀)</b>다른 선생님이 <u>복사해 가는</u> 시트. 학급도 기록도 없는 빈 틀. <u>배포하지 않아요.</u></div>
+  </div>
+  <p>학생은 <code>…/dictation/?s=서버ID</code> 링크(또는 QR)로 들어와요. 링크 끝의 <code>?s=</code>가 “어느 선생님 시트에 기록할지”를 알려 줘요. 한 번 들어오면 태블릿이 기억해요.</p>
+  <table>
+    <tr><th></th><th>내 시트 ②</th><th>원본 시트 ③</th><th>다른 선생님 사본</th></tr>
+    <tr><td>Code.gs 붙여 넣기</td><td>✅</td><td>✅</td><td>자동으로 들어 있음</td></tr>
+    <tr><td>setup 실행</td><td>✅</td><td>✅</td><td>메뉴가 알아서 함</td></tr>
+    <tr><td>설정 탭 B3 (앱 주소)</td><td>✅</td><td>✅</td><td>원본에서 복사됨</td></tr>
+    <tr><td>배포</td><td>✅</td><td><b style="color:var(--red)">❌ 하지 않음</b></td><td>✅ (각자)</td></tr>
+    <tr><td>학급 만들기</td><td>✅</td><td><b style="color:var(--red)">❌ 하지 않음</b></td><td>✅ (각자)</td></tr>
+  </table>
+</section>
+
+<section id="github">
+  <h2><span class="step s1">1</span>GitHub에 화면 올리기</h2>
+  <p class="time">이미 올려 두셨으면 목록만 확인하세요</p>
+  <p>저장소 <code>anyj1130-dot/dictation</code>의 <b>맨 바깥</b>이 이렇게 되어 있어야 해요.</p>
+<pre>audio/   css/   data/   js/
+config.js   index.html   start.html   teacher.html   README.md</pre>
+  <h3>config.js — 두 줄</h3>
+<pre>const API_URL = "내 시트의 웹 앱 URL";            // 없어도 됨 (링크의 ?s= 가 우선)
+const TEMPLATE_URL = "원본 시트의 /copy 주소";     // 3단계에서 채워요</pre>
+  <div class="tip">파일을 고쳐 올릴 때는 <b>같은 이름 그대로</b> 덮어써요. 다운로드 폴더에 같은 파일이 있으면 <code>index (1).html</code>처럼 이름이 바뀌니 조심하세요. 앱은 열 때마다 최신 파일을 받아 오니, 올린 뒤 1~2분이면 반영돼요.</div>
+  <div class="tip">저장소는 <b>Public</b>이어야 해요. 무료 계정에서 Private으로 바꾸면 사이트가 꺼져요. 학생 기록은 GitHub가 아니라 구글 시트에 있어요.</div>
+</section>
+
+<section id="mine">
+  <h2><span class="step s2">2</span>내 시트 (우리 반 기록용)</h2>
+  <p class="time">약 10분 · 개인 Gmail 계정으로</p>
+  <ol>
+    <li>지금 쓰는 <code>받아쓰기 기록</code> 시트 (없으면 새 스프레드시트) → <b class="ui">확장 프로그램</b> → <b class="ui">Apps Script</b> → 내용을 모두 지우고 <code>Code.gs</code>를 통째로 붙여 넣기 → 💾 저장</li>
+    <li>위쪽 함수 목록에서 <b>setup</b> → <b class="ui">▶ 실행</b> (처음이면 권한 승인)</li>
+    <li>시트로 돌아와 <b>설정</b> 탭 <b>B3</b>에 <code>https://anyj1130-dot.github.io/dictation/</code> (주소 확인: <b>-dot</b> 빠지지 않게)</li>
+    <li><b>배포</b>
+      <ul>
+        <li><b>처음이면</b>: <b class="ui">배포</b> → <b class="ui">새 배포</b> → 톱니 <b class="ui">웹 앱</b> → 실행 <b>나</b> / 액세스 권한 <b>모든 사용자</b> → <b class="ui">배포</b></li>
+        <li><b>이미 배포한 적 있으면</b>: <b class="ui">배포</b> → <b class="ui">배포 관리</b> → 연필 ✏️ → 버전 <b>새 버전</b> → 액세스 권한 <b>모든 사용자</b> 확인 → <b class="ui">배포</b> (주소가 그대로 유지돼요)</li>
+      </ul>
+    </li>
+    <li>마지막 화면의 <b>웹 앱 URL 옆 [복사]</b> 버튼으로 복사 (드래그하면 잘리기 쉬워요)</li>
+    <li>시트 새로고침 → 맨 위 메뉴줄 <b>맨 오른쪽</b>의 <b class="ui">받아쓰기</b> 메뉴
+      <ul>
+        <li>처음이면 <b class="ui">① 우리 반 시작하기</b> → 주소 붙여 넣기 → 학급 이름·교사 비밀번호 → 학생 주소·QR 완성 (Apps Script에 다녀와서 안내창이 닫혀 있으면 <b class="ui">① 우리 반 시작하기</b>를 한 번 더 누르면 주소 칸이 다시 나와요)</li>
+        <li>예전에 주소를 넣었으면 <b class="ui">웹 앱 주소 다시 넣기</b> → 새로 복사한 주소</li>
+      </ul>
+    </li>
+    <li><b class="ui">받아쓰기</b> → <b class="ui">연결 상태 확인하기</b>에서 “✅ 웹 앱이 잘 열려요”가 나오면 끝!</li>
+  </ol>
+  <div class="warn">⚠️ 액세스 권한은 꼭 <b>‘모든 사용자’</b>. ‘<u>Google 계정이 있는</u> 모든 사용자’나 ‘나만’이면 학생 화면에서 “선생님 서버에 연결하지 못했어요”가 나와요. 주소를 저장할 때 앱이 직접 열어 보고 잘못되면 알려 줘요.</div>
+  <h3>그다음</h3>
+  <ul>
+    <li>교사 화면(<code>…/dictation/teacher.html?s=…</code>) → <b class="ui">학생 관리</b>에서 <code>번호, 닉네임, 비밀번호</code>를 한 줄에 한 명씩 붙여 넣어 등록</li>
+    <li>교사 화면 <b class="ui">설정·QR</b> 탭 → <b class="ui">QR 크게 보기</b>를 칠판에 띄우기</li>
+    <li>학생: QR로 들어와 <b>학급 → 닉네임 → 비밀번호</b>. 다음부터는 바로 들어가요.</li>
+  </ul>
+</section>
+
+<section id="tpl">
+  <h2><span class="step s3">3</span>원본 시트 (다른 선생님이 복사해 갈 빈 틀)</h2>
+  <p class="time">약 5분 · 한 번만</p>
+  <ol>
+    <li>구글 드라이브 → <b>새 스프레드시트</b> → 이름 <code>받아쓰기(원본)</code></li>
+    <li><b class="ui">확장 프로그램</b> → <b class="ui">Apps Script</b> → <code>Code.gs</code> 붙여 넣기 → 💾 → <b>setup</b> 실행</li>
+    <li><b>설정</b> 탭 <b>B3</b>에 <code>https://anyj1130-dot.github.io/dictation/</code> (B1은 비워 두기)</li>
+    <li><b class="ui">공유</b> → 일반 액세스 <b>링크가 있는 모든 사용자</b> · <b>뷰어</b> → <b class="ui">링크 복사</b></li>
+    <li>주소 끝 <code>/edit…</code>를 지우고 <code>/copy</code>로 바꾸기
+      <br>예: <code>https://docs.google.com/spreadsheets/d/1AbC…xyz/copy</code></li>
+    <li>GitHub <code>config.js</code>의 <code>TEMPLATE_URL</code> 따옴표 안에 넣고 Commit</li>
+  </ol>
+  <div class="warn">⚠️ 원본 시트에서는 <b>배포도, 메뉴 [① 우리 반 시작하기]도 하지 마세요.</b> 학급이나 학생을 만들면 그 내용이 다른 선생님 사본에 그대로 복사돼요. 혹시 원본에서 학급을 만들었다면, 그 시트는 ‘내 시트’로 쓰고 원본은 새로 만들어 주세요.</div>
+</section>
+
+<section id="share">
+  <h2><span class="step s4">4</span>다른 선생님께 나눠 주기</h2>
+  <p>이 주소 하나만 알려 주세요.</p>
+<pre>https://anyj1130-dot.github.io/dictation/start.html</pre>
+  <p>다른 선생님은 <b>사본 만들기 → 배포 한 번 → 메뉴 [① 우리 반 시작하기]</b>만 하면 자기 반 QR이 나와요 (약 5분). GitHub는 필요 없어요.</p>
+  <div class="tip">다른 선생님도 <b>개인 Gmail</b>로 해야 해요. 학교(워크스페이스) 계정은 ‘모든 사용자’ 배포가 막혀 있는 경우가 많아요.</div>
+</section>
+
+<section id="audio">
+  <h2><span class="step s5">5</span>음성 파일 (이미 만들었으면 건너뛰기)</h2>
+  <ol>
+    <li>앱 폴더의 <code>MAKE_AUDIO.bat</code> 더블클릭 (Python 필요 — 설치할 때 “Add python.exe to PATH” 체크)</li>
+    <li>끝나면 열리는 <code>audio</code> 폴더의 <code>.js</code> 파일 16개를 GitHub <code>audio</code> 폴더에 올리기</li>
+    <li>학교 인터넷에서 막히면 휴대폰 핫스팟이나 집 인터넷으로 실행</li>
+  </ol>
+  <p>음성은 GitHub에 있어서 <b>모든 선생님이 같이</b> 써요. 한 번만 만들면 돼요.</p>
+</section>
+
+<section id="update">
+  <h2><span class="step s0">6</span>앞으로 고칠 때</h2>
+  <table>
+    <tr><th>고친 것</th><th>할 일</th><th>다른 선생님께</th></tr>
+    <tr><td>화면 파일 (<code>index.html</code>, <code>teacher.html</code>, <code>js</code>, <code>css</code>, <code>data</code>, <code>audio</code>)</td><td>GitHub에 같은 이름으로 덮어쓰기</td><td>✅ 바로 반영</td></tr>
+    <tr><td><code>Code.gs</code> (서버)</td><td>내 시트: 붙여 넣기 → <b>배포 관리 → 새 버전</b><br>원본 시트: 붙여 넣기만</td><td>❌ 이미 만든 사본은 그대로 (새로 복사하는 선생님부터 적용)</td></tr>
+  </table>
+</section>
+
+<section id="trouble">
+  <h2><span class="step s0">7</span>문제가 생기면</h2>
+  <table>
+    <tr><th>증상</th><th>확인할 것</th></tr>
+    <tr><td>GitHub 404 “File not found”</td><td>주소의 사용자 이름(<code>anyj1130<b>-dot</b></code>), 파일이 맨 바깥에 그 이름 그대로 있는지, 저장소가 Public인지</td></tr>
+    <tr><td>“선생님 서버에 연결하지 못했어요” / 학급이 안 보임</td><td>시트 메뉴 <b class="ui">받아쓰기 ▸ 연결 상태 확인하기</b>. 액세스 권한 ‘모든 사용자’, 주소가 잘리지 않았는지 → <b class="ui">웹 앱 주소 다시 넣기</b></td></tr>
+    <tr><td>시트에 ‘받아쓰기’ 메뉴가 없음</td><td>새 <code>Code.gs</code>를 붙여 넣고 저장했는지 → 시트 새로고침 후 5~10초 기다리기</td></tr>
+    <tr><td>“선생님께 받은 링크나 QR로 들어와 주세요”</td><td>학생이 <code>?s=</code> 없는 주소로 들어옴 → QR이나 교사 화면 <b class="ui">설정·QR</b>의 주소로 다시</td></tr>
+    <tr><td>고쳐 올렸는데 화면이 그대로</td><td>1~2분 기다리기, 저장소 <b class="ui">Actions</b>에 초록 체크 확인 → 새로고침</td></tr>
+    <tr><td>음성이 안 나옴</td><td><code>audio</code> 폴더에 <code>.js</code> 16개가 있는지, 태블릿 소리·방해 금지 모드</td></tr>
+    <tr><td>틀리게 썼는데 맞았다고 나옴</td><td>삼성 키보드 <b>예측 텍스트·자동 맞춤법 검사</b> 끄기</td></tr>
+  </table>
+</section>
+</main>
+</body>
+</html>
