@@ -84,25 +84,7 @@ main{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:16px 24p
 
 /* 홈 */
 .hello{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-.rankbig{width:76px;height:76px;border-radius:14px;background:var(--green);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:none;font-family:"Jua",sans-serif;font-size:1.25rem;text-align:center;line-height:1.15;padding:6px;box-shadow:inset 0 -5px 0 rgba(0,0,0,.18)}
-.rankbig small{font-family:"Nunito",sans-serif;font-weight:900;font-size:.62em;opacity:.85;letter-spacing:.03em;line-height:1}
-.ladder{list-style:none;padding:0;margin:12px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:6px}
-.ladder li b{white-space:nowrap}
-.rankbig span.long{font-size:.82em;white-space:nowrap}
-.hello{word-break:keep-all}
-.ladder li{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;background:var(--cell);color:var(--muted);font-size:.9rem}
-.ladder li i{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-style:normal;font-weight:900;font-size:.8rem;color:#fff;border:1.5px solid var(--line);flex:none}
-.ladder li b{flex:1;font-weight:700}
-.ladder li span{font-size:.78rem}
-.ladder li.done{color:var(--ink)}
-.ladder li.now{color:var(--ink);outline:2px solid var(--yellow,#f2c14e);background:var(--card)}
-.ladder li.done i,.ladder li.now i{border-color:transparent}
-.modal.levelup .box{position:relative;z-index:2;animation:pop .5s ease}
-.lvtag{display:inline-block;font-family:"Nunito",sans-serif;font-weight:900;letter-spacing:.12em;font-size:.95rem;color:#2b2b2b;background:#f2c14e;border-radius:999px;padding:4px 14px;margin-bottom:12px}
-.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:1}
-.confetti i{position:absolute;top:-20px;width:10px;height:16px;border-radius:3px;opacity:.95;animation:fall 2s linear infinite}
-@keyframes fall{0%{transform:translateY(-20px) rotate(0)}100%{transform:translateY(110vh) rotate(540deg)}}
-@media (prefers-reduced-motion:reduce){.confetti{display:none}.modal .rankbig,.modal.levelup .box{animation:none}}
+.rankbig{width:76px;height:76px;border-radius:14px;background:var(--green);color:#fff;display:grid;place-items:center;font-family:"Jua",sans-serif;font-size:1.25rem;text-align:center;line-height:1.15;padding:6px;box-shadow:inset 0 -5px 0 rgba(0,0,0,.18)}
 .progress{height:14px;background:var(--cell);border-radius:999px;overflow:hidden;margin-top:10px}
 .progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--green),var(--red));border-radius:999px}
 .tabs{display:inline-flex;background:var(--card);border-radius:12px;padding:4px;gap:4px;margin:18px 0 12px;flex-wrap:wrap}
@@ -397,83 +379,4 @@ textarea.textin{resize:vertical;font-family:inherit}
   table.t td:first-child{min-width:84px;font-size:.88rem}
   table.t th,table.t td{padding:7px 3px}
   table.t th{font-size:.78rem}
-}
-.barrow .v,.barrow .chip{white-space:nowrap}
-
-/* ───────── 학생별 리포트 ───────── */
-.rpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}
-.rpick label{display:flex;gap:6px;align-items:center;background:var(--cell);border-radius:10px;padding:8px 10px;cursor:pointer;font-weight:700}
-.rpick label span{color:var(--muted);font-weight:700;min-width:18px}
-.rpick input{width:18px;height:18px;accent-color:var(--blue)}
-.report{background:#fff;color:#222;border-radius:6px;max-width:794px;margin:0 auto 24px;padding:34px 38px;box-shadow:0 10px 30px rgba(0,0,0,.35);font-family:"Noto Sans KR","Malgun Gothic",sans-serif;font-size:13px;line-height:1.5}
-.report h4{margin:0 0 8px;font-size:13.5px;color:#2b4c7e}
-.rp-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #2b4c7e;padding-bottom:10px;margin-bottom:14px}
-.rp-title{font-family:"Jua",sans-serif;font-size:24px;color:#2b4c7e}
-.rp-sub{font-size:15px}
-.rp-date{text-align:right;color:#666;font-size:11.5px}
-.rp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-.rp-stats div{border:1px solid #d9dee6;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column}
-.rp-stats small{color:#777;font-size:11px}
-.rp-stats b{font-size:16px;color:#1d2b40}
-.rp-stats span{color:#666;font-size:11px}
-.rp-summary{background:#f3f6fb;border-left:4px solid #4e7fd1;padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:13.5px}
-.rp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.rp-box{border:1px solid #d9dee6;border-radius:8px;padding:10px 12px}
-.rp-bars span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rp-bars div{display:grid;grid-template-columns:92px 1fr 36px 22px;align-items:center;gap:6px;margin:3px 0}
-.rp-bars i{display:block;height:9px;background:#e8ecf2;border-radius:5px;overflow:hidden}
-.rp-bars em{display:block;height:100%;background:#5d9b84}
-.rp-bars .weak span,.rp-bars .weak b{color:#c2413a;font-weight:800}
-.rp-bars .weak em{background:#e07a72}
-.rp-bars b{text-align:right;font-size:12px}
-.rp-bars small{color:#999;font-size:10.5px;text-align:right}
-.rp-note{color:#888;font-size:10.5px;margin:6px 0 0}
-.rp-empty{color:#999;margin:4px 0}
-.rp-t{width:100%;border-collapse:collapse;font-size:12px}
-.rp-t th{color:#777;font-weight:700;text-align:left;border-bottom:1px solid #d9dee6;padding:3px 4px}
-.rp-t td{border-bottom:1px solid #eef0f4;padding:3px 4px}
-.rp-t .ok{color:#2e8a5f}.rp-t .bad{color:#c2413a}
-.rp-sem{display:flex;gap:8px;align-items:flex-start;margin:3px 0 5px}
-.rp-sem .lab{font-weight:800;font-size:11.5px;min-width:80px;padding-top:6px;white-space:nowrap}
-.rp-sem .cells{display:flex;flex-wrap:wrap;gap:4px}
-.rp-sem .cells span{display:flex;flex-direction:column;align-items:center;min-width:52px;border:1px solid #d9dee6;border-radius:5px;padding:1px 3px;font-weight:800;font-size:12px}
-.rp-sem .cells small{font-weight:400;color:#888;font-size:9.5px}
-.rp-sem .cells .none{color:#bbb;font-weight:400}
-.rp-sem .cells .full{background:#e6f4ec;color:#2e8a5f}
-.rp-sem .cells .low{background:#fbe9e7;color:#c2413a}
-.rp-weeks{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;height:92px;align-items:end}
-.rp-weeks div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
-.rp-weeks i{display:block;width:70%;background:#7aa2e0;border-radius:3px 3px 0 0;min-height:2px}
-.rp-weeks b{font-size:10.5px;color:#555}
-.rp-weeks small{font-size:10px;color:#888;margin-top:2px}
-.rp-acts{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:11.5px;color:#555}
-.rp-tips{background:#fffaf0;border-color:#f0dcb0}
-.rp-tests{margin-bottom:12px}
-.rp-tips ul{font-size:12.5px}
-.rp-tips ul{margin:0;padding-left:18px}
-.rp-teacher{margin-bottom:10px}
-.rp-write{min-height:64px;border-radius:4px;outline:none;background-image:repeating-linear-gradient(transparent,transparent 23px,#e3e6eb 23px,#e3e6eb 24px);line-height:24px;white-space:pre-wrap}
-.rp-write:focus{background-color:#fbfcff}
-.rp-foot{text-align:center;color:#aaa;font-size:10px}
-@media (max-width:700px){.report{padding:20px 16px}.rp-stats{grid-template-columns:1fr 1fr}.rp-grid{grid-template-columns:1fr}}
-@media print{
-  @page{size:A4;margin:10mm}
-  html,body{background:#fff!important}
-  body>*:not(main),.waves,.topbar{display:none!important}
-  main{padding:0!important;max-width:none!important}
-  #main>*:not(#tabBody),#tabBody>*:not(#reports),.no-print{display:none!important}
-  .report{box-shadow:none;border-radius:0;margin:0;padding:0;max-width:none;break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .report:last-child{break-after:auto;page-break-after:auto}
-  .rp-stats,.rp-grid{grid-template-columns:repeat(4,1fr)}
-  .rp-grid{grid-template-columns:1fr 1fr}
-  .rp-box{break-inside:avoid}
-  .report{font-size:12px;zoom:var(--fit,1)}
-  .rp-tests{margin-bottom:8px}
-  .rp-head{margin-bottom:10px}
-  .rp-stats,.rp-summary,.rp-grid,.rp-tips{margin-bottom:8px}
-  .rp-grid{gap:8px}
-  .rp-box{padding:8px 10px}
-  .rp-weeks{height:72px}
-  .rp-bars div{margin:2px 0}
-  .rp-write{min-height:48px}
 }
