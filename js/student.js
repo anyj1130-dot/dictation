@@ -130,13 +130,15 @@
     show(`<div class="login card">
       <div class="logo-tiles" style="grid-template-columns:repeat(4,40px)"><i style="background:var(--blue)">받</i><i style="background:var(--green)">아</i><i style="background:var(--red)">쓰</i><i style="background:var(--blue)">기</i></div>
       <h1>차근차근 받아쓰기</h1>
-      <p class="muted" style="margin:0">4학년 · 한 급씩 차근차근</p>
+      <p class="muted" style="margin:0">2·3·4학년 · 한 급씩 차근차근</p>
       <label class="field"><span>학급</span><select id="cls" class="textin"><option value="">불러오는 중…</option></select></label>
       <label class="field"><span>닉네임</span><input id="nick" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></label>
       <label class="field"><span>비밀번호</span><input id="pw" type="password" autocomplete="off"></label>
       <button class="btn" id="go" style="width:100%">들어가기</button>
       ${noServer && !API.isDemo() ? `<div class="msg warn">선생님께 받은 <b>링크나 QR 코드</b>로 들어와 주세요. 그냥 둘러보려면 체험 모드를 눌러요.</div>
         <button class="btn ghost" id="demo" style="width:100%;margin-top:10px">체험 모드로 둘러보기</button>` : ''}
+      ${API.isDemo() ? `<div class="msg warn" style="margin-top:12px"><b>체험 모드</b> · 학급 <b>체험반</b> · 닉네임 <b>체험</b> · 비밀번호 <b>1234</b><br><small>기록은 이 기기에만 남아요.</small></div>
+        <button class="btn ghost" id="demoGo" style="width:100%;margin-top:10px">체험으로 바로 들어가기</button>` : ''}
       <div id="lmsg">${msg ? `<div class="msg bad">${esc(msg)}</div>` : ''}</div>
       <a class="teacherlink" href="${API.isDemo() ? 'teacher.html?demo' : API.linkFor('teacher.html')}">선생님이신가요? <b>교사 화면으로 →</b></a>
     </div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a></div>`);
@@ -157,6 +159,7 @@
     };
     $('#go').onclick = go;
     enterKey($('#pw'), go);
+    if ($('#demoGo')) $('#demoGo').onclick = async () => { try { await doLogin('체험반', '체험', '1234'); } catch (e) { $('#lmsg').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; } };
     if ($('#demo')) $('#demo').onclick = async () => { API.setDemo(true); await doLogin('체험반', '체험', '1234'); toast('체험 모드예요. 기록은 이 기기에만 남아요.', 3000); };
   }
   async function doLogin(cls, nick, pw) {

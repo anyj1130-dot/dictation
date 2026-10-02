@@ -32,6 +32,7 @@
       <button class="btn" id="go" style="width:100%">들어가기</button>
       <button class="btn ghost" id="newBtn" style="width:100%;margin-top:10px">새 학급 만들기</button>
       ${noServer && !API.isDemo() ? `<div class="msg warn">아직 내 서버(구글 시트)가 연결되지 않았어요. <a href="start.html" style="color:inherit;font-weight:800">처음 시작하는 방법 보기 →</a><br><small>둘러보기만 하려면 체험 모드 (체험반 / 비밀번호 1234 · 학교 코드 1234)</small></div><button class="btn ghost" id="demo" style="width:100%;margin-top:10px">체험 모드</button>` : ''}
+      ${API.isDemo() ? `<div class="msg warn" style="margin-top:12px"><b>체험 모드</b> · 학급 <b>체험반</b> · 교사 비밀번호 <b>1234</b><br><small>새 학급을 만들어 볼 때 학교 코드도 <b>1234</b>예요. 기록은 이 기기에만 남아요.</small></div>` : ''}
       <div id="lmsg">${msg ? `<div class="msg bad">${esc(msg)}</div>` : ''}</div></div><div class="credit">문장 출처: 참쌤스쿨 × 모여봐욕 「22개정 차근차근 받아쓰기」 · <a href="https://chamssaem.com/516657" target="_blank" rel="noopener">원본 자료 보기 ↗</a></div>`;
     const fill = (list) => {
       $('#cls').innerHTML = list.length ? '<option value="">학급을 골라요</option>' + list.map(c => `<option ${c === st.cls ? 'selected' : ''}>${esc(c)}</option>`).join('') : '<option value="">아직 학급이 없어요 · 새 학급을 만들어 주세요</option>';
